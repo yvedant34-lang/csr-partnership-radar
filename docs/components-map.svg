@@ -1,0 +1,182 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000" font-family="Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8a877f"/>
+    </marker>
+    <style>
+      .title { font-size: 34px; font-weight: 700; fill: #1a1a19; }
+      .sub { font-size: 18px; fill: #52504b; }
+      .step { font-size: 14px; font-weight: 700; letter-spacing: 1.5px; fill: #8a877f; }
+      .head { font-size: 21px; font-weight: 700; fill: #1a1a19; }
+      .body { font-size: 15px; fill: #2e2d2a; }
+      .chip { font-size: 12px; font-weight: 700; letter-spacing: 0.6px; }
+      .note { font-size: 15px; fill: #52504b; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1000" fill="#f6f6f4"/>
+  <text x="60" y="70" class="title">CSR Partnership Radar: Components Map</text>
+  <text x="60" y="104" class="sub">Welfare for Youth, Pune. Every Monday by 06:30 IST: which companies to call this week, and why.</text>
+
+  <!-- Box geometry: 7 columns, width 218, gap 30, start x 60, y 160, height 560 -->
+  <!-- 1 Trigger -->
+  <g>
+    <rect x="60" y="160" width="218" height="560" rx="14" fill="#ffffff" stroke="#e4e2dd" stroke-width="2"/>
+    <text x="80" y="196" class="step">1  TRIGGER</text>
+    <text x="80" y="230" class="head">Schedules and</text>
+    <text x="80" y="256" class="head">a paste box</text>
+    <text x="80" y="296" class="body">Vercel Cron, daily</text>
+    <text x="80" y="318" class="body">05:00 IST: ingest</text>
+    <text x="80" y="350" class="body">Vercel Cron, Monday</text>
+    <text x="80" y="372" class="body">05:30 IST: digest</text>
+    <text x="80" y="404" class="body">Paste a link: Ananya</text>
+    <text x="80" y="426" class="body">adds LinkedIn or</text>
+    <text x="80" y="448" class="body">WhatsApp posts</text>
+    <text x="80" y="480" class="body">Every cron call needs</text>
+    <text x="80" y="502" class="body">CRON_SECRET</text>
+    <rect x="80" y="650" width="88" height="26" rx="13" fill="#e8eefb"/><text x="92" y="668" class="chip" fill="#1c5cab">BACKEND</text>
+    <rect x="176" y="650" width="98" height="26" rx="13" fill="#eef7f0"/><text x="186" y="668" class="chip" fill="#1d6b45">FRONTEND</text>
+  </g>
+
+  <!-- 2 Input -->
+  <g>
+    <rect x="308" y="160" width="218" height="560" rx="14" fill="#ffffff" stroke="#e4e2dd" stroke-width="2"/>
+    <text x="328" y="196" class="step">2  INPUT</text>
+    <text x="328" y="230" class="head">Public CSR</text>
+    <text x="328" y="256" class="head">signals</text>
+    <text x="328" y="296" class="body">Google News RSS:</text>
+    <text x="328" y="318" class="body">9 search lanes, last</text>
+    <text x="328" y="340" class="body">7 days, India edition</text>
+    <text x="328" y="372" class="body">The full publisher</text>
+    <text x="328" y="394" class="body">article behind each</text>
+    <text x="328" y="416" class="body">Google link</text>
+    <text x="328" y="448" class="body">Pasted post text</text>
+    <text x="328" y="480" class="body">Stored in raw_items,</text>
+    <text x="328" y="502" class="body">one row per headline</text>
+    <rect x="328" y="650" width="52" height="26" rx="13" fill="#fdf1e4"/><text x="340" y="668" class="chip" fill="#8f5207">API</text>
+    <rect x="388" y="650" width="100" height="26" rx="13" fill="#f1edfb"/><text x="400" y="668" class="chip" fill="#6a4bbf">DATABASE</text>
+  </g>
+
+  <!-- 3 Context -->
+  <g>
+    <rect x="556" y="160" width="218" height="560" rx="14" fill="#ffffff" stroke="#e4e2dd" stroke-width="2"/>
+    <text x="576" y="196" class="step">3  CONTEXT</text>
+    <text x="576" y="230" class="head">What we know</text>
+    <text x="576" y="256" class="head">already</text>
+    <text x="576" y="296" class="body">radar_config: sectors,</text>
+    <text x="576" y="318" class="body">Pune footprint, weights,</text>
+    <text x="576" y="340" class="body">tier thresholds, gates</text>
+    <text x="576" y="372" class="body">15 verified live leads</text>
+    <text x="576" y="394" class="body">and stage history</text>
+    <text x="576" y="426" class="body">Lusha: CSR contact and</text>
+    <text x="576" y="448" class="body">work email, credits</text>
+    <text x="576" y="470" class="body">capped and logged</text>
+    <text x="576" y="502" class="body">NGO programme and</text>
+    <text x="576" y="524" class="body">84% retention outcome</text>
+    <rect x="576" y="650" width="100" height="26" rx="13" fill="#f1edfb"/><text x="588" y="668" class="chip" fill="#6a4bbf">DATABASE</text>
+    <rect x="684" y="650" width="52" height="26" rx="13" fill="#fdf1e4"/><text x="696" y="668" class="chip" fill="#8f5207">API</text>
+  </g>
+
+  <!-- 4 Processing -->
+  <g>
+    <rect x="804" y="160" width="218" height="560" rx="14" fill="#ffffff" stroke="#e4e2dd" stroke-width="2"/>
+    <text x="824" y="196" class="step">4  PROCESSING</text>
+    <text x="824" y="230" class="head">Rules in code,</text>
+    <text x="824" y="256" class="head">not AI</text>
+    <text x="824" y="296" class="body">Keyword prefilter</text>
+    <text x="824" y="328" class="body">One lead per company,</text>
+    <text x="824" y="350" class="body">signal and IST week</text>
+    <text x="824" y="382" class="body">Score: signal, recency,</text>
+    <text x="824" y="404" class="body">sector, geography,</text>
+    <text x="824" y="426" class="body">budget. Hot, warm, cold</text>
+    <text x="824" y="448" class="body">with hot gates</text>
+    <text x="824" y="480" class="body">Conversion estimate</text>
+    <text x="824" y="502" class="body">and its confidence</text>
+    <text x="824" y="534" class="body">Next actions per lead</text>
+    <text x="824" y="566" class="body">Tested: 15 of 15 seed</text>
+    <text x="824" y="588" class="body">rows reproduced</text>
+    <rect x="824" y="650" width="88" height="26" rx="13" fill="#e8eefb"/><text x="836" y="668" class="chip" fill="#1c5cab">BACKEND</text>
+  </g>
+
+  <!-- 5 AI -->
+  <g>
+    <rect x="1052" y="160" width="218" height="560" rx="14" fill="#ffffff" stroke="#e4e2dd" stroke-width="2"/>
+    <text x="1072" y="196" class="step">5  AI</text>
+    <text x="1072" y="230" class="head">Gemini Flash</text>
+    <text x="1072" y="256" class="head">reads and drafts</text>
+    <text x="1072" y="296" class="body">Temperature 0, fixed</text>
+    <text x="1072" y="318" class="body">JSON schema</text>
+    <text x="1072" y="350" class="body">Extracts the company,</text>
+    <text x="1072" y="372" class="body">signal, place, partner,</text>
+    <text x="1072" y="394" class="body">budget, people named</text>
+    <text x="1072" y="426" class="body">Outreach plan tied to</text>
+    <text x="1072" y="448" class="body">the exact signal</text>
+    <text x="1072" y="480" class="body">Email under 120 words,</text>
+    <text x="1072" y="502" class="body">LinkedIn note, call</text>
+    <text x="1072" y="524" class="body">opener</text>
+    <text x="1072" y="556" class="body">Steps through 9 Flash</text>
+    <text x="1072" y="578" class="body">models when a daily</text>
+    <text x="1072" y="600" class="body">limit is hit</text>
+    <rect x="1072" y="650" width="52" height="26" rx="13" fill="#fdf1e4"/><text x="1084" y="668" class="chip" fill="#8f5207">API</text>
+  </g>
+
+  <!-- 6 Human decision -->
+  <g>
+    <rect x="1300" y="160" width="218" height="560" rx="14" fill="#fdeceb" stroke="#b42318" stroke-width="2.5"/>
+    <text x="1320" y="196" class="step" fill="#b42318">6  HUMAN DECISION</text>
+    <text x="1320" y="230" class="head">Ananya decides</text>
+    <text x="1320" y="256" class="head">who to call</text>
+    <text x="1320" y="296" class="body">Reads the reason and</text>
+    <text x="1320" y="318" class="body">the metrics behind it</text>
+    <text x="1320" y="350" class="body">Edits the draft and</text>
+    <text x="1320" y="372" class="body">sends it from her own</text>
+    <text x="1320" y="394" class="body">Gmail or Outlook</text>
+    <text x="1320" y="426" class="body">Ticks actions, moves</text>
+    <text x="1320" y="448" class="body">the stage, marks</text>
+    <text x="1320" y="470" class="body">useful or not useful</text>
+    <text x="1320" y="502" class="body">Edits need the</text>
+    <text x="1320" y="524" class="body">passcode</text>
+    <rect x="1320" y="650" width="98" height="26" rx="13" fill="#eef7f0"/><text x="1330" y="668" class="chip" fill="#1d6b45">FRONTEND</text>
+  </g>
+
+  <!-- 7 Output -->
+  <g>
+    <rect x="1548" y="160" width="192" height="560" rx="14" fill="#ffffff" stroke="#e4e2dd" stroke-width="2"/>
+    <text x="1568" y="196" class="step">7  OUTPUT</text>
+    <text x="1568" y="230" class="head">Dashboard and</text>
+    <text x="1568" y="256" class="head">Monday digest</text>
+    <text x="1568" y="296" class="body">Dashboard, leads</text>
+    <text x="1568" y="318" class="body">table, lead pages,</text>
+    <text x="1568" y="340" class="body">pipeline and</text>
+    <text x="1568" y="362" class="body">conversion chart</text>
+    <text x="1568" y="394" class="body">Tasks with drafts</text>
+    <text x="1568" y="426" class="body">Digest email to</text>
+    <text x="1568" y="448" class="body">Ananya via Resend,</text>
+    <text x="1568" y="470" class="body">and /digest/week</text>
+    <text x="1568" y="502" class="body">Proven funders,</text>
+    <text x="1568" y="524" class="body">policy updates</text>
+    <rect x="1568" y="650" width="98" height="26" rx="13" fill="#eef7f0"/><text x="1578" y="668" class="chip" fill="#1d6b45">FRONTEND</text>
+    <rect x="1674" y="650" width="52" height="26" rx="13" fill="#fdf1e4"/><text x="1686" y="668" class="chip" fill="#8f5207">API</text>
+  </g>
+
+  <!-- arrows between boxes -->
+  <g stroke="#8a877f" stroke-width="2.5" marker-end="url(#arrow)">
+    <line x1="280" y1="440" x2="304" y2="440"/>
+    <line x1="528" y1="440" x2="552" y2="440"/>
+    <line x1="776" y1="440" x2="800" y2="440"/>
+    <line x1="1024" y1="440" x2="1048" y2="440"/>
+    <line x1="1272" y1="440" x2="1296" y2="440"/>
+    <line x1="1520" y1="440" x2="1544" y2="440"/>
+  </g>
+
+  <!-- Version control band -->
+  <rect x="60" y="760" width="1680" height="86" rx="14" fill="#ffffff" stroke="#e4e2dd" stroke-width="2"/>
+  <rect x="80" y="790" width="150" height="26" rx="13" fill="#eeede9"/><text x="92" y="808" class="chip" fill="#52504b">VERSION CONTROL</text>
+  <text x="250" y="800" class="body">GitHub repo, a CI check on every push (typecheck, 65 tests, production build), automatic deploy to Vercel.</text>
+  <text x="250" y="824" class="body">Keys live in environment variables only: .env.local is git ignored and a commit hook blocks any key.</text>
+
+  <!-- Footer -->
+  <text x="60" y="892" class="note">Stack: Next.js on Vercel (frontend and backend), Supabase Postgres (database), Gemini Flash, Lusha, Resend, Google News RSS (APIs).</text>
+  <text x="60" y="920" class="note">Gemini reads and drafts; plain code scores. The radar never contacts a company: every email is sent by Ananya from her own account.</text>
+  <text x="60" y="948" class="note">Live: csr-partnership-radar-opal.vercel.app</text>
+</svg>

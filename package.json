@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check": "tsc --noEmit && vitest run && next build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
@@ -29,5 +30,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
