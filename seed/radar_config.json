@@ -1,0 +1,56 @@
+{
+  "_note": "Default radar_config. Values marked in _inferred were fitted to seed/csr_leads_live.csv (15 rows, REF 2026-10-12T18:00+05:30) because build_seed.py was not supplied. Values not exercised by those rows are reasoned defaults and listed in _unverified.",
+  "_inferred": [
+    "signal_points.new_initiative", "signal_points.unspent_csr", "signal_points.event_or_vlog", "signal_points.annual_report_mention",
+    "recency_buckets", "slow_decay_factor", "sector_points", "geo_points", "budget_points",
+    "partner_penalty", "tiers.warm_min (any value 50..60 fits)", "tiers.hot_min (any value 71+ fits)",
+    "gates.too_old_days", "conversion_prior"
+  ],
+  "_unverified": ["signal_points.partner_search", "signal_points.csr_tender_or_eoi", "signal_points.new_csr_head", "budget_points large (>= 10 Cr)"],
+
+  "home_city": "Pune",
+  "home_city_aliases": ["Pune", "Pimpri Chinchwad", "Pimpri-Chinchwad", "Chakan", "Hinjewadi", "Talegaon", "Ranjangaon"],
+  "home_state": "Maharashtra",
+  "focus_sectors": ["Education", "Skill Development", "Digital Literacy", "Youth Employment"],
+
+  "signal_points": {
+    "partner_search": 30,
+    "csr_tender_or_eoi": 30,
+    "new_initiative": 22,
+    "unspent_csr": 20,
+    "new_csr_head": 18,
+    "event_or_vlog": 6,
+    "annual_report_mention": 6,
+    "other": 0
+  },
+  "slow_decay_signals": ["unspent_csr", "new_csr_head"],
+  "slow_decay_factor": 4,
+  "recency_buckets": [
+    { "max_days": 2, "points": 20 },
+    { "max_days": 7, "points": 15 },
+    { "max_days": 14, "points": 7 },
+    { "max_days": 30, "points": 2 }
+  ],
+  "sector_points": {
+    "Skill Development": 15,
+    "Youth Employment": 15,
+    "Digital Literacy": 13,
+    "Education": 10
+  },
+  "geo_points": { "home_city": 20, "home_state": 15, "programme_in_home_state": 15, "pan_india": 10, "other": 0 },
+  "budget_points": { "unknown": 3, "under_1_cr": 5, "from_1_to_10_cr": 10, "over_10_cr": 15 },
+  "partner_penalty": 15,
+
+  "tiers": { "hot_min": 75, "warm_min": 55 },
+  "gates": {
+    "enabled": ["too_old", "outside_footprint", "partner_already_selected", "implemented_in_house"],
+    "too_old_days": 14
+  },
+  "conversion_prior": { "base_pct": 2, "span_pct": 38, "measured_after_outcomes": 50 },
+
+  "actions": {
+    "hot": "Call this week. Task, email draft and call opener are ready on the Tasks page.",
+    "warm": "Email plus LinkedIn connect this week. Call slot next week if they reply.",
+    "cold": "No call. Add to nurture list and re-score if a new signal appears."
+  }
+}
