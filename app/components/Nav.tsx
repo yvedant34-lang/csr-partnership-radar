@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/tasks", label: "Tasks" },
   { href: "/policy", label: "Policy" },
   { href: "/paste", label: "Paste a link" },
+  { href: "/digest/latest", label: "Digest" },
   { href: "/settings", label: "Settings" },
 ];
 
