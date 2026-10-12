@@ -1,0 +1,19 @@
+name: Radar schedule
+# Vercel Hobby runs crons once a day (05:00 IST). This adds four daytime runs so new posts reach
+# Ananya's notification inbox within hours. Google News RSS is unofficial: keep it to a few runs a day.
+on:
+  schedule:
+    - cron: "30 3,7,11,15 * * *" # 09:00, 13:00, 17:00, 21:00 IST
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the ingest (extraction chains on Vercel)
+        run: |
+          code=$(curl -s -o out.json -w '%{http_code}' -m 120 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ vars.APP_URL || 'https://csr-partnership-radar-opal.vercel.app' }}/api/cron/ingest")
+          echo "HTTP $code"; head -c 600 out.json; echo
+          test "$code" = "200"
