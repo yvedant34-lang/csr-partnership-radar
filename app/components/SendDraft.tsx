@@ -12,7 +12,7 @@ export function SendDraft({ leadId, to, toName, subject, body, admin }: {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const links = composeLinks({ to: admin ? to : null, subject, body });
-  const btn = "rounded-md border border-line bg-surface px-2.5 py-1 text-xs font-medium text-fg hover:bg-surface-2";
+  const btn = "rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-fg hover:bg-surface-2";
   return (
     <div className="space-y-1.5 rounded-md border border-line p-2.5">
       <p className="text-xs text-fg-3">
@@ -25,7 +25,7 @@ export function SendDraft({ leadId, to, toName, subject, body, admin }: {
         {(opened || admin) && (
           <button type="button" disabled={!admin || pending}
             onClick={() => start(async () => setMsg((await markEmailSent(leadId)).message))}
-            className="rounded-md bg-accent px-2.5 py-1 text-xs font-medium text-accent-fg disabled:opacity-40">
+            className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-fg disabled:opacity-40">
             {pending ? "Saving…" : "I sent it"}
           </button>
         )}

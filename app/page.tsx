@@ -5,7 +5,8 @@ import { Card, Kpi, TierBadge } from "@/app/components/Badges";
 import { ConversionChart } from "@/app/components/ConversionChart";
 import { CoverageStrip } from "@/app/components/CoverageStrip";
 import { LeadsTable } from "@/app/components/LeadsTable";
-import { getConfig, getConversionSeries, getCoverage, getLeads, type Lead } from "@/lib/data";
+import { NotificationInbox } from "@/app/components/NotificationInbox";
+import { CLOSED_STAGES, getConfig, getConversionSeries, getCoverage, getLeads, getNotifications, type Lead } from "@/lib/data";
 import { isAdmin, showSample } from "@/lib/session";
 import { actionQueue, buildLeadViews, todayIst } from "@/lib/view";
 import { isoWeek, thisWeekCutoff } from "@/lib/week";
@@ -24,15 +25,15 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   if (lead) redirect(`/leads/${lead}`); // links in older digests
 
   const sample = await showSample();
-  const [leads, coverage, series, cfg, admin] = await Promise.all([
-    getLeads({ sample }), getCoverage(), getConversionSeries(sample), getConfig(), isAdmin(),
+  const [leads, coverage, series, cfg, admin, inbox] = await Promise.all([
+    getLeads({ sample }), getCoverage(), getConversionSeries(sample), getConfig(), isAdmin(), getNotifications({ unreadOnly: true, limit: 30 }),
   ]);
   const { rows, actions } = await buildLeadViews(leads, cfg);
   const cutoff = thisWeekCutoff().getTime();
   const thisWeek = leads.filter((l) => new Date(l.posted_at).getTime() >= cutoff);
   const hot = thisWeek.filter((l) => l.tier === "hot");
   const warm = thisWeek.filter((l) => l.tier === "warm");
-  const open = leads.filter((l) => !["won", "lost", "parked"].includes(l.pipeline_stage));
+  const open = leads.filter((l) => !CLOSED_STAGES.includes(l.pipeline_stage));
   const queue = actionQueue(leads, actions, 10);
   const openActions = [...actions.values()].flat().filter((a) => !a.done && a.key !== "nurture").length;
   const avg = open.length ? open.reduce((n, l) => n + l.probability_of_conversion_pct, 0) / open.length : 0;
@@ -45,6 +46,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <h1 className="text-2xl font-semibold tracking-tight">{headline(hot, warm)}</h1>
         <CoverageStrip run={coverage.run} queued={coverage.queued} />
       </header>
+
+      <NotificationInbox items={inbox} leads={new Map(leads.map((l) => [l.id, l]))} actions={actions} admin={admin} today={today} />
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Kpi label="Call this week" value={hot.length} tone="hot" hint="Hot, posted in 7 days" />

@@ -105,7 +105,7 @@ export function SettingsForm({ cfg, disabled, credits }: { cfg: RadarConfig; dis
       </Fieldset>
 
       <div className="flex flex-wrap items-start gap-3">
-        <button disabled={disabled || pending} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg disabled:opacity-50">{pending ? "Saving…" : "Save settings"}</button>
+        <button disabled={disabled || pending} className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-fg disabled:opacity-50">{pending ? "Saving…" : "Save settings"}</button>
         <ActionButton action={rescoreAction} label="Rescore all leads" pendingLabel="Rescoring…" disabled={disabled} />
       </div>
       {state && <p role="status" className={`text-sm ${state.ok ? "text-fg" : "text-hot"}`}>{state.message}</p>}

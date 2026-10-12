@@ -49,5 +49,7 @@ describe("next actions", () => {
   it("stages drive follow ups", () => {
     expect(keys(nextActions({ ...base, pipeline_stage: "contacted" }, [], [], DEFAULT_CONFIG, NOW))).toContain("follow_up");
     expect(keys(nextActions({ ...base, pipeline_stage: "lost" }, [], [], DEFAULT_CONFIG, NOW))).toEqual([]);
+    expect(keys(nextActions({ ...base, pipeline_stage: "won" }, [], [], DEFAULT_CONFIG, NOW))).toEqual(["invoice"]);
+    expect(keys(nextActions({ ...base, pipeline_stage: "ghosted" }, [], [], DEFAULT_CONFIG, NOW))).toEqual(["last_try"]);
   });
 });

@@ -3,8 +3,14 @@ import { normaliseConfig, type RadarConfig } from "@/lib/config";
 import { db } from "@/lib/supabase/server";
 import { isoWeek, thisWeekCutoff, weekLabelToDate, weekStartIst } from "@/lib/week";
 
-export const STAGES = ["new", "contacted", "meeting", "proposal", "won", "lost", "parked"] as const;
+// Pipeline stages in board order. The lifecycle chart ranks them from Ghosted (lowest) to Invoice signed (highest).
+export const STAGES = ["new", "contacted", "meeting", "proposal", "won", "invoice_signed", "lost", "ghosted", "parked"] as const;
 export type Stage = (typeof STAGES)[number];
+const STAGE_NAMES: Record<string, string> = {
+  new: "New", contacted: "Contacted", meeting: "Meeting", proposal: "Proposal", won: "Won",
+  invoice_signed: "Invoice signed", lost: "Lost", ghosted: "Ghosted", parked: "Parked",
+};
+export const CLOSED_STAGES: string[] = ["won", "invoice_signed", "lost", "ghosted", "parked"];
 
 export interface Lead {
   id: string;
@@ -136,7 +142,7 @@ export async function getConversionSeries(sample: boolean, weeks = 12) {
   if (!sample) q = q.eq("leads.is_synthetic", false);
   const { data: events } = await q;
 
-  const ladder = ["new", "contacted", "meeting", "proposal", "won"] as const;
+  const ladder = ["new", "contacted", "meeting", "proposal", "won", "invoice_signed"] as const;
   const series = Object.fromEntries(ladder.map((s) => [s, labels.map(() => 0)])) as Record<(typeof ladder)[number], number[]>;
   for (const e of events ?? []) {
     const idx = labels.indexOf(isoWeek(new Date(e.changed_at)));
@@ -148,13 +154,13 @@ export async function getConversionSeries(sample: boolean, weeks = 12) {
   const { data: leads } = await lq;
   const all = leads ?? [];
   const reached = (stages: string[]) => all.filter((l) => stages.includes(l.pipeline_stage)).length;
-  const open = all.filter((l) => !["won", "lost", "parked"].includes(l.pipeline_stage));
+  const open = all.filter((l) => !CLOSED_STAGES.includes(l.pipeline_stage));
   const totals = {
     found: all.length,
-    contacted: reached(["contacted", "meeting", "proposal", "won", "lost"]),
-    meeting: reached(["meeting", "proposal", "won"]),
-    won: reached(["won"]),
-    lost: reached(["lost"]),
+    contacted: reached(["contacted", "meeting", "proposal", "won", "invoice_signed", "lost", "ghosted"]),
+    meeting: reached(["meeting", "proposal", "won", "invoice_signed"]),
+    won: reached(["won", "invoice_signed"]),
+    lost: reached(["lost", "ghosted"]),
     avgEstimate: open.length ? open.reduce((n, l) => n + Number(l.probability_of_conversion_pct), 0) / open.length : 0,
   };
   return { labels, weekStarts: labels.map((l) => weekLabelToDate(l)!.toISOString()), series, totals };
@@ -190,7 +196,8 @@ export async function getActivity(leadId: string, createdAt: string): Promise<Ac
     db().from("lead_contacts").select("name, source, found_at, revealed_at, email").eq("lead_id", leadId),
   ]);
   const items: ActivityItem[] = [];
-  for (const e of events ?? []) items.push({ at: e.changed_at, text: e.from_stage ? `Moved from ${e.from_stage} to ${e.to_stage}` : "Found by the radar" });
+  const label = (k: string) => STAGE_NAMES[k] ?? k;
+  for (const e of events ?? []) items.push({ at: e.changed_at, text: e.from_stage ? `Moved from ${label(e.from_stage)} to ${label(e.to_stage)}` : "Found by the radar" });
   for (const t of tasks ?? []) {
     items.push({ at: t.created_at, text: `${t.title}${t.status !== "open" ? ` (${t.status})` : ""}` });
     if (t.email_draft && t.drafted_model) items.push({ at: t.created_at, text: `Email draft written by ${t.drafted_model}` });
@@ -201,4 +208,26 @@ export async function getActivity(leadId: string, createdAt: string): Promise<Ac
   }
   if (!items.length) items.push({ at: createdAt, text: "Found by the radar" });
   return items.sort((a, b) => +new Date(b.at) - +new Date(a.at));
+}
+
+export async function getStageEvents(leadId: string) {
+  const { data } = await db().from("lead_stage_events").select("to_stage, changed_at").eq("lead_id", leadId).order("changed_at");
+  return (data ?? []).map((e) => ({ stage: e.to_stage as string, at: e.changed_at as string }));
+}
+
+export interface Notification {
+  id: string; lead_id: string | null; kind: string; source: string | null; title: string; body: string | null;
+  tier: string | null; created_at: string; read_at: string | null;
+}
+
+export async function getNotifications(opts: { unreadOnly?: boolean; limit?: number } = {}) {
+  let q = db().from("notifications").select("*").order("created_at", { ascending: false }).limit(opts.limit ?? 20);
+  if (opts.unreadOnly) q = q.is("read_at", null);
+  const { data } = await q;
+  return (data ?? []) as Notification[];
+}
+
+export async function unreadNotificationCount() {
+  const { count } = await db().from("notifications").select("id", { count: "exact", head: true }).is("read_at", null);
+  return count ?? 0;
 }

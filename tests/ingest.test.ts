@@ -27,6 +27,7 @@ describe("prefilter", () => {
   it("passes CSR skilling news", () => expect(prefilter("Zeta inaugurates skilling centre for youth under CSR").pass).toBe(true));
   it("passes unspent CSR", () => expect(prefilter("Bharat Electronics transfers Rs 75 crore to Unspent CSR Account").pass).toBe(true));
   it("passes CSR spend with no sector named", () => expect(prefilter("Bhansali Engineering Polymers spends Rs 9.42 crore on CSR in FY 2025-26").pass).toBe(true));
+  it("passes skilling news without the word CSR", () => expect(prefilter("AM/NS India empowers Odisha youth through digital skill development").pass).toBe(true));
   it("drops sport", () => expect(prefilter("Sourav Ganguly appointed head coach of Delhi Capitals for IPL 2027").pass).toBe(false));
   it("drops foreign CSR", () => expect(prefilter("407 graduate as MTN Foundation digital skills programme expands in Uganda").pass).toBe(false));
   it("passes policy", () => expect(prefilter("MCA notifies CSR rules amendment").pass).toBe(true));

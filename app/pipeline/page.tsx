@@ -27,7 +27,7 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
         <ConversionChart data={series} measuredAfter={cfg.conversion_prior.measured_after_outcomes} />
       </Card>
       <section className="-mx-4 overflow-x-auto px-4 md:-mx-8 md:px-8">
-        <div className="grid min-w-[1120px] grid-cols-7 gap-3">
+        <div className="grid min-w-[1400px] grid-cols-9 gap-3">
           {STAGES.map((stage) => {
             const col = leads.filter((l) => l.pipeline_stage === stage);
             return (

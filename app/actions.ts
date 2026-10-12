@@ -3,12 +3,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { readArticle, extractArticleText } from "@/lib/article";
 import { normaliseConfig, type GateName, type RadarConfig } from "@/lib/config";
 import { STAGES, type Stage } from "@/lib/data";
 import { draftOutreach, saveDraftTask } from "@/lib/drafts";
+import { intake } from "@/lib/intake";
 import { findContacts, revealEmail } from "@/lib/lusha";
-import { loadConfig, processItem, rescoreAll } from "@/lib/pipeline";
+import { loadConfig, rescoreAll } from "@/lib/pipeline";
 import { isAdmin, login, logout, requireAdmin } from "@/lib/session";
 import { db } from "@/lib/supabase/server";
 import { comingMonday } from "@/lib/week";
@@ -132,6 +132,22 @@ export async function markEmailSent(leadId: string): Promise<ActionResult> {
   } catch (e) { return fail(e); }
 }
 
+export async function markNotificationRead(id: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await db().from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
+    return done("Cleared.");
+  } catch (e) { return fail(e); }
+}
+
+export async function markAllNotificationsRead(): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await db().from("notifications").update({ read_at: new Date().toISOString() }).is("read_at", null);
+    return done("All cleared.");
+  } catch (e) { return fail(e); }
+}
+
 export async function setTheme(theme: "light" | "dark" | "system") {
   (await cookies()).set("radar_theme", theme, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
   revalidatePath("/", "layout");
@@ -149,41 +165,9 @@ export async function setTaskStatus(taskId: string, status: "open" | "done" | "d
 export async function pasteAction(_: ActionResult | null, form: FormData): Promise<ActionResult & { leadId?: string }> {
   try {
     await requireAdmin();
-    const url = String(form.get("url") ?? "").trim();
-    const pasted = String(form.get("text") ?? "").trim();
-    if (!url && !pasted) return { ok: false, message: "Paste a link, the post text, or both." };
-    const isLinkedIn = /linkedin\.com/i.test(url);
-
-    let body = pasted;
-    let sourceUrl: string | null = url || null;
-    let title = "";
-    if (url && !isLinkedIn && !pasted) {
-      if (/news\.google\.com/.test(url)) {
-        const r = await readArticle(url);
-        if (!r.text) return { ok: false, message: `Could not read that page (${r.error}). Paste the text instead.` };
-        body = r.text;
-        sourceUrl = r.url;
-      } else {
-        const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 CSRPartnershipRadar" }, signal: AbortSignal.timeout(12_000) });
-        if (!res.ok) return { ok: false, message: `That page returned ${res.status}. Paste the text instead.` };
-        const page = extractArticleText(await res.text());
-        if (page.text.length < 120) return { ok: false, message: "No readable text on that page. Paste the text instead." };
-        body = page.text;
-        title = page.title ?? "";
-      }
-    }
-    if (isLinkedIn && !pasted) {
-      return { ok: false, message: "LinkedIn pages are not fetched (their terms). Paste the post text with the link." };
-    }
-    if (!title) title = body.split(/\n|\. /)[0].slice(0, 160);
-
-    const { outcome } = await processItem({
-      title, body, link: url || "pasted text", source_url: sourceUrl,
-      source_name: isLinkedIn ? "LinkedIn (pasted)" : url ? new URL(url).hostname.replace(/^www\./, "") : "Pasted text",
-      source_type: isLinkedIn ? "linkedin" : "paste",
-      published_at: new Date().toISOString(),
-    }, await loadConfig());
-
+    const r = await intake({ url: String(form.get("url") ?? ""), text: String(form.get("text") ?? ""), via: "paste" });
+    if (!r.ok) return { ok: false, message: r.message };
+    const outcome = r.outcome;
     if (outcome.kind === "lead") {
       revalidatePath("/", "layout");
       return { ok: true, message: `${outcome.created ? "New" : "Updated"} lead: ${outcome.tier} ${outcome.score}.`, leadId: outcome.id };

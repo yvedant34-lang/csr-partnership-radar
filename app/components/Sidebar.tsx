@@ -33,7 +33,7 @@ function useActive() {
   return (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
 }
 
-export function Sidebar() {
+export function Sidebar({ unread = 0 }: { unread?: number }) {
   const active = useActive();
   return (
     <nav aria-label="Main" className="space-y-0.5">
@@ -43,19 +43,22 @@ export function Sidebar() {
           href={n.href}
           prefetch={n.href.startsWith("/digest") ? false : undefined}
           aria-current={active(n.href) ? "page" : undefined}
-          className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm ${active(n.href) ? "bg-surface-2 font-medium text-fg" : "text-fg-2 hover:bg-surface-2 hover:text-fg"}`}
+          className={`flex items-center gap-2.5 rounded-full px-3 py-1.5 text-sm ${active(n.href) ? "bg-surface-2 font-medium text-fg" : "text-fg-3 hover:bg-surface-2 hover:text-fg"}`}
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d={ICON[n.icon]} />
           </svg>
           {n.label}
+          {n.href === "/" && unread > 0 && (
+            <span className="ml-auto rounded-full bg-accent-2 px-1.5 text-[11px] font-semibold tabular text-accent-fg" aria-label={`${unread} new signals`}>{unread}</span>
+          )}
         </Link>
       ))}
     </nav>
   );
 }
 
-export function MobileNav() {
+export function MobileNav({ unread = 0 }: { unread?: number }) {
   const active = useActive();
   return (
     <nav aria-label="Main" className="-mx-4 overflow-x-auto px-4">
@@ -63,8 +66,8 @@ export function MobileNav() {
         {NAV.map((n) => (
           <li key={n.href}>
             <Link href={n.href} aria-current={active(n.href) ? "page" : undefined}
-              className={`inline-block rounded-md px-2.5 py-1.5 ${active(n.href) ? "bg-accent text-accent-fg" : "text-fg-2"}`}>
-              {n.label}
+              className={`inline-block rounded-full px-3 py-1.5 ${active(n.href) ? "bg-accent text-accent-fg" : "text-fg-2"}`}>
+              {n.label}{n.href === "/" && unread > 0 ? ` (${unread})` : ""}
             </Link>
           </li>
         ))}

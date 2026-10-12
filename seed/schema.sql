@@ -97,7 +97,7 @@ create table if not exists leads (
   scored_at              timestamptz,
   -- CRM
   pipeline_stage         text not null default 'new'
-    check (pipeline_stage in ('new','contacted','meeting','proposal','won','lost','parked')),
+    check (pipeline_stage in ('new','contacted','meeting','proposal','won','invoice_signed','lost','ghosted','parked')),
   owner                  text default 'Ananya',
   feedback               text check (feedback in ('useful','not_useful')),
   is_synthetic           boolean not null default false,
@@ -193,6 +193,20 @@ create table if not exists gemini_model_status (
   updated_at  timestamptz not null default now()
 );
 
+-- In-app notifications: one per new signal from any source, shown with the lead's next actions.
+create table if not exists notifications (
+  id          uuid primary key default gen_random_uuid(),
+  lead_id     uuid references leads(id) on delete cascade,
+  kind        text not null,              -- new_lead | tier_up | inbound
+  source      text,                       -- news | paste | linkedin | inbound
+  title       text not null,
+  body        text,
+  tier        text,
+  created_at  timestamptz not null default now(),
+  read_at     timestamptz
+);
+create index if not exists notifications_unread_idx on notifications (read_at, created_at desc);
+
 create table if not exists digests (
   id           uuid primary key default gen_random_uuid(),
   week         text not null unique,                      -- 2026-W42 (ISO week, IST)
@@ -217,6 +231,7 @@ alter table digests           enable row level security;
 alter table lead_contacts     enable row level security;
 alter table lusha_spend       enable row level security;
 alter table gemini_model_status enable row level security;
+alter table notifications     enable row level security;
 
 do $$
 declare t text;

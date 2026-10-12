@@ -11,7 +11,7 @@ export interface LeadRow { lead: Lead; next: NextAction | null; contact: string 
 export function LeadsTable({ rows }: { rows: LeadRow[] }) {
   if (!rows.length) return <p className="rounded-lg border border-dashed border-line p-6 text-center text-sm text-fg-3">No leads match these filters.</p>;
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-surface">
+    <div className="overflow-hidden rounded-2xl border border-line bg-surface">
       <table className="w-full text-left text-sm">
         <thead className="hidden border-b border-line bg-surface-2 text-xs text-fg-3 md:table-header-group">
           <tr>

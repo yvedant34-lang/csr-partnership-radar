@@ -11,6 +11,7 @@ const STAGES = [
   { key: "meeting", label: "Meeting", color: "var(--chart-3)" },
   { key: "proposal", label: "Proposal", color: "var(--chart-4)" },
   { key: "won", label: "Won", color: "var(--chart-5)" },
+  { key: "invoice_signed", label: "Invoice signed", color: "var(--chart-6)" },
 ] as const;
 
 type Key = (typeof STAGES)[number]["key"];

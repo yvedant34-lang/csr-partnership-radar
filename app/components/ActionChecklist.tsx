@@ -29,7 +29,7 @@ function Cta({ item, admin }: { item: ChecklistItem; admin: boolean }) {
   const [msg, setMsg] = useState<ActionResult | null>(null);
   if (!item.cta) return null;
   if (item.cta === "open_source") {
-    return item.sourceUrl ? <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="rounded-md border border-line px-2 py-1 text-xs text-fg-2 hover:text-fg">Open source</a> : null;
+    return item.sourceUrl ? <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="rounded-full border border-line px-3 py-1 text-xs text-fg-2 hover:text-fg">Open source</a> : null;
   }
   const run = () => start(async () => {
     const r = item.cta === "draft" ? await draftEmail(item.leadId)
@@ -40,7 +40,7 @@ function Cta({ item, admin }: { item: ChecklistItem; admin: boolean }) {
   return (
     <span className="inline-flex flex-col items-end gap-0.5">
       <button type="button" onClick={run} disabled={!admin || pending}
-        className="rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-fg disabled:cursor-not-allowed disabled:opacity-40">
+        className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-fg disabled:cursor-not-allowed disabled:opacity-40">
         {pending ? "Working…" : CTA_LABEL[item.cta]}
       </button>
       {msg && <span className={`text-[11px] ${msg.ok ? "text-fg-3" : "text-hot"}`}>{msg.message}</span>}

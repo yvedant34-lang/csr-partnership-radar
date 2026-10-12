@@ -10,14 +10,14 @@ export function PasteForm({ disabled }: { disabled: boolean }) {
     <form action={action} className="space-y-3">
       <label className="block text-sm">
         <span className="font-medium">Link</span>
-        <input name="url" type="url" placeholder="https://… (news article, company CSR page, LinkedIn post)" className="mt-1 w-full rounded-md bg-surface px-3 py-2 border border-line" />
+        <input name="url" type="url" placeholder="https://… (news article, company CSR page, LinkedIn post)" className="mt-1 w-full rounded-xl bg-surface-2 px-4 py-2.5 border border-line" />
       </label>
       <label className="block text-sm">
         <span className="font-medium">Post or message text</span>
         <span className="block text-xs text-fg-3">Required for LinkedIn and WhatsApp forwards. LinkedIn pages are never fetched.</span>
-        <textarea name="text" rows={8} className="mt-1 w-full rounded-md bg-surface px-3 py-2 border border-line" />
+        <textarea name="text" rows={8} className="mt-1 w-full rounded-xl bg-surface-2 px-4 py-2.5 border border-line" />
       </label>
-      <button disabled={disabled || pending} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg disabled:opacity-50">
+      <button disabled={disabled || pending} className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-fg disabled:opacity-50">
         {pending ? "Reading and scoring…" : "Read and score"}
       </button>
       {state && (

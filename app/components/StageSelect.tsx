@@ -4,8 +4,11 @@ import { useState, useTransition } from "react";
 import { moveStage } from "@/app/actions";
 import type { Stage } from "@/lib/data";
 
-const STAGES: Stage[] = ["new", "contacted", "meeting", "proposal", "won", "lost", "parked"];
-const LABEL: Record<Stage, string> = { new: "New", contacted: "Contacted", meeting: "Meeting", proposal: "Proposal", won: "Won", lost: "Lost", parked: "Parked" };
+const STAGES: Stage[] = ["new", "contacted", "meeting", "proposal", "won", "invoice_signed", "lost", "ghosted", "parked"];
+const LABEL: Record<Stage, string> = {
+  new: "New", contacted: "Contacted", meeting: "Meeting", proposal: "Proposal", won: "Won",
+  invoice_signed: "Invoice signed", lost: "Lost", ghosted: "Ghosted", parked: "Parked",
+};
 
 export function StageSelect({ leadId, stage, disabled }: { leadId: string; stage: Stage; disabled?: boolean }) {
   const [value, setValue] = useState(stage);

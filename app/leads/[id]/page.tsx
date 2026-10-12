@@ -9,12 +9,13 @@ import { ScoreBars } from "@/app/components/ScoreBars";
 import { SendDraft } from "@/app/components/SendDraft";
 import { emailBodyFromDraft, linkedinNoteFromDraft } from "@/lib/compose";
 import { StageSelect } from "@/app/components/StageSelect";
-import { getActivity, getConfig, getContacts, getLead, getTasks } from "@/lib/data";
+import { LifecycleChart } from "@/app/components/LifecycleChart";
+import { getActivity, getConfig, getContacts, getLead, getStageEvents, getTasks } from "@/lib/data";
 import { formatDate, formatDateTimeIst, formatInr } from "@/lib/format";
 import { nextActions } from "@/lib/next-actions";
 import { estimateConfidence, gateWords } from "@/lib/scoring";
 import { isAdmin } from "@/lib/session";
-import { CHANNEL_LABEL, decision, place, SIGNAL_LABEL } from "@/lib/ui";
+import { CHANNEL_LABEL, leadDecision, place, SIGNAL_LABEL } from "@/lib/ui";
 import { todayIst } from "@/lib/view";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
   const lead = await getLead(id);
   if (!lead) notFound();
   const [cfg, contacts, tasks, admin] = await Promise.all([getConfig(), getContacts(id), getTasks(id), isAdmin()]);
-  const activity = await getActivity(id, lead.posted_at);
+  const [activity, stageEvents] = await Promise.all([getActivity(id, lead.posted_at), getStageEvents(id)]);
   const actions = nextActions(lead, contacts, tasks, cfg);
   const conf = estimateConfidence({ ...lead, has_contact_email: contacts.some((c) => c.email) });
   const sourceContacts = contacts.filter((c) => c.source === "source_text");
@@ -64,7 +65,7 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
             {lead.is_synthetic && <SampleBadge />}
           </div>
           <p className="text-xs text-fg-3">{SIGNAL_LABEL[lead.signal_type] ?? lead.signal_type} · {place(lead)} · posted {formatDate(lead.posted_at)}</p>
-          <p className="text-base"><span className="font-medium">{decision(lead.tier)}</span> <span className="text-fg-2">{lead.why_now}</span></p>
+          <p className="text-base"><span className="font-medium">{leadDecision(lead.tier, lead.pipeline_stage)}</span> <span className="text-fg-2">{lead.why_now}</span></p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <StageSelect leadId={id} stage={lead.pipeline_stage} disabled={locked} />
@@ -118,6 +119,9 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
 
         {/* Centre: what to do, and the drafts to do it with */}
         <div className="min-w-0 space-y-4">
+          <Card title="Life cycle">
+            <LifecycleChart events={stageEvents.length ? stageEvents : [{ stage: lead.pipeline_stage, at: lead.posted_at }]} now={new Date().toISOString()} />
+          </Card>
           <Card title="Next actions">
             <ActionChecklist items={actions.map((a) => ({ ...a, leadId: id, sourceUrl }))} admin={admin} today={todayIst()} empty="No actions: this lead is closed." />
           </Card>

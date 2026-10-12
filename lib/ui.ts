@@ -14,6 +14,21 @@ export function decision(tier: Tier): string {
   return "No call.";
 }
 
+/** The headline for a lead page: the tier decides while the lead is new, the stage decides after that. */
+export function leadDecision(tier: Tier, stage: string): string {
+  switch (stage) {
+    case "contacted": return "Contacted. Follow up once if there is no reply.";
+    case "meeting": return "Meeting stage. Send the proposal next.";
+    case "proposal": return "Proposal sent. Get the decision date.";
+    case "won": return "Won. Get the invoice signed.";
+    case "invoice_signed": return "Invoice signed.";
+    case "ghosted": return "Ghosted. One last try on a different channel, then park.";
+    case "lost": return "Lost.";
+    case "parked": return "Parked.";
+    default: return decision(tier);
+  }
+}
+
 export const SIGNAL_LABEL: Record<string, string> = {
   partner_search: "Partner search",
   csr_tender_or_eoi: "Tender or EOI",
@@ -30,7 +45,8 @@ export const CHANNEL_LABEL: Record<string, string> = {
 };
 
 export const STAGE_LABEL: Record<string, string> = {
-  new: "New", contacted: "Contacted", meeting: "Meeting", proposal: "Proposal", won: "Won", lost: "Lost", parked: "Parked",
+  new: "New", contacted: "Contacted", meeting: "Meeting", proposal: "Proposal", won: "Won",
+  invoice_signed: "Invoice signed", lost: "Lost", ghosted: "Ghosted", parked: "Parked",
 };
 
 export function place(l: { city: string | null; state: string | null }): string {

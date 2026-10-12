@@ -47,7 +47,7 @@ export default async function Leads({ searchParams }: { searchParams: Promise<Pa
         </div>
         <form action="/leads" className="flex gap-2">
           {Object.entries(sp).filter(([k, v]) => k !== "q" && v).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
-          <input name="q" defaultValue={sp.q} placeholder="Search company, place, contact" className="w-56 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm placeholder:text-fg-3" />
+          <input name="q" defaultValue={sp.q} placeholder="Search company, place, contact" className="w-56 rounded-full border border-line bg-surface px-2.5 py-1.5 text-sm placeholder:text-fg-3" />
         </form>
       </div>
 

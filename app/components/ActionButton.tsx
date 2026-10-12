@@ -31,7 +31,7 @@ export function ActionButton({
           if (confirm && !window.confirm(confirm)) return;
           start(async () => setResult(await action()));
         }}
-        className={`rounded-md font-medium disabled:cursor-not-allowed disabled:opacity-45 ${size === "sm" ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm"} ${styles}`}
+        className={`rounded-full font-medium disabled:cursor-not-allowed disabled:opacity-45 ${size === "sm" ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm"} ${styles}`}
       >
         {pending ? pendingLabel ?? "Working…" : label}
       </button>

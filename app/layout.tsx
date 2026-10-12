@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions";
 import { MobileNav, Sidebar } from "@/app/components/Sidebar";
 import { SampleToggle } from "@/app/components/SampleToggle";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
+import { unreadNotificationCount } from "@/lib/data";
 import { isAdmin, showSample } from "@/lib/session";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], display: "swap" });
+const dmSans = DM_Sans({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "CSR Partnership Radar",
@@ -19,24 +20,26 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [admin, sample, jar] = await Promise.all([isAdmin(), showSample(), cookies()]);
-  const theme = (jar.get("radar_theme")?.value ?? "system") as "light" | "dark" | "system";
+  const [admin, sample, jar, unread] = await Promise.all([isAdmin(), showSample(), cookies(), unreadNotificationCount()]);
+  const theme = (jar.get("radar_theme")?.value ?? "dark") as "light" | "dark" | "system";
   const lock = admin ? (
     <form action={logoutAction}><button className="text-xs text-fg-3 underline underline-offset-2 hover:text-fg">Lock editing</button></form>
   ) : (
     <Link href="/login" className="text-xs text-fg-3 underline underline-offset-2 hover:text-fg">Unlock editing</Link>
   );
   return (
-    <html lang="en-IN" data-theme={theme === "system" ? undefined : theme} className={inter.className}>
+    <html lang="en-IN" data-theme={theme === "system" ? undefined : theme} className={dmSans.className}>
       <body className="min-h-screen bg-bg text-fg antialiased">
         <div className="md:grid md:grid-cols-[232px_1fr]">
           <aside className="sticky top-0 hidden h-screen flex-col justify-between border-r border-line bg-surface px-3 py-4 md:flex">
             <div className="space-y-5">
               <Link href="/" className="block px-2.5">
-                <span className="block text-sm font-semibold tracking-tight">CSR Partnership Radar</span>
-                <span className="block text-xs text-fg-3">Welfare for Youth</span>
+                <span className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+                  <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />CSR Partnership Radar
+                </span>
+                <span className="label mt-1 block">Welfare for Youth</span>
               </Link>
-              <Sidebar />
+              <Sidebar unread={unread} />
             </div>
             <div className="space-y-3 px-2.5">
               <SampleToggle on={sample} />
@@ -50,7 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/" className="text-sm font-semibold">CSR Partnership Radar</Link>
                 <div className="flex items-center gap-3"><SampleToggle on={sample} />{lock}</div>
               </div>
-              <MobileNav />
+              <MobileNav unread={unread} />
             </header>
             {sample && (
               <div className="border-b border-line bg-sample-bg px-4 py-1.5 text-center text-xs text-sample">

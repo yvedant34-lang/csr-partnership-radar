@@ -94,10 +94,19 @@ export function nextActions(
   const stage = lead.pipeline_stage;
   const out: Omit<NextAction, "done">[] = [];
 
-  if (["won", "lost", "parked"].includes(stage)) {
-    if (stage === "won") out.push({ key: "record_outcome", title: "Record the grant amount and start date", why: "Won leads feed the measured conversion rate.", due: null, cta: null, rank: 50 });
+  if (stage === "won") {
+    out.push({ key: "invoice", title: "Send the invoice and get it signed", why: "A yes is not a grant until the invoice is signed. Then move to Invoice signed.", due: ymd(addDays(now, 7)), cta: null, rank: 15 });
     return out.map((a) => ({ ...a, done: isDone(a.key) }));
   }
+  if (stage === "invoice_signed") {
+    out.push({ key: "record_outcome", title: "Record the grant amount and start date", why: "Signed invoices feed the measured conversion rate.", due: null, cta: null, rank: 50 });
+    return out.map((a) => ({ ...a, done: isDone(a.key) }));
+  }
+  if (stage === "ghosted") {
+    out.push({ key: "last_try", title: `Try one different channel with ${lead.poc_name ?? "the CSR head"}, then park`, why: "No reply after follow up. One call or a warm intro, then stop.", due: ymd(addDays(now, 3)), cta: null, rank: 70 });
+    return out.map((a) => ({ ...a, done: isDone(a.key) }));
+  }
+  if (["lost", "parked"].includes(stage)) return [];
 
   if (!lead.article_read && lead.post_link?.startsWith("http")) {
     out.push({ key: "read_source", title: "Read the source before reaching out", why: "Scored from the headline only, so the facts are unconfirmed.", due: ymd(now), cta: "open_source", rank: 5 });
@@ -132,7 +141,7 @@ export function nextActions(
   }
 
   if (stage === "contacted") {
-    out.push({ key: "follow_up", title: `Follow up with ${who} if there is no reply in 5 days`, why: `One follow up, then park. (${metric})`, due: ymd(addDays(now, 5)), cta: null, rank: 20 });
+    out.push({ key: "follow_up", title: `Follow up with ${who} if there is no reply in 5 days`, why: `One follow up; still silent after that, mark Ghosted. (${metric})`, due: ymd(addDays(now, 5)), cta: null, rank: 20 });
   }
   if (stage === "meeting") {
     out.push({ key: "proposal", title: "Send a one page proposal after the meeting", why: `Lead with the outcome: ${cfg.ngo_outcome || "add it in Settings"}`, due: ymd(addDays(now, 3)), cta: null, rank: 20 });

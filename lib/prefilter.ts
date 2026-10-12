@@ -20,7 +20,7 @@ export function prefilter(title: string, snippet?: string | null): PrefilterResu
   if (/\bunspent\b/i.test(t)) return { pass: true, reason: "unspent csr" };
   if (CSR.test(t) && /\b(spends?|spent|obligation|crore|lakh)\b/i.test(t)) return { pass: true, reason: "csr spend" };
   if (CSR.test(t) && SECTOR.test(t)) return { pass: true, reason: "csr + sector" };
-  if (SECTOR.test(t) && /\b(launch|inaugurat|opens?|centre|center|partner|support|fund|spend|crore|lakh)/i.test(t)) {
+  if (SECTOR.test(t) && /\b(launch|inaugurat|opens?|centre|center|partner|support|fund|spend|crore|lakh|empower|train|programme|program|initiative|scholarship|lab|academy)/i.test(t)) {
     return { pass: true, reason: "sector + activity" };
   }
   return { pass: false, reason: "no csr or sector signal" };

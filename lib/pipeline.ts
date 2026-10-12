@@ -6,6 +6,7 @@ import { pocFromSource } from "@/lib/poc";
 import { readArticle } from "@/lib/article";
 import { draftOutreach, saveDraftTask } from "@/lib/drafts";
 import { autoEnrich } from "@/lib/lusha";
+import { notifyLead } from "@/lib/notify";
 import { scoreLead, type LeadInput } from "@/lib/scoring";
 import { db } from "@/lib/supabase/server";
 import { comingMonday, weekStartIst } from "@/lib/week";
@@ -204,7 +205,14 @@ export async function processItem(item: SourceItem, cfg: RadarConfig, now = new 
       await db().from("lead_contacts").insert({ lead_id: existing.id, source: "source_text", name: poc.name, title: poc.designation });
     }
     // Became hot (or newly qualifies for contact lookup) on this read: same actions as a new lead.
-    if (scores.tier !== existing.tier) await onTierReached(existing.id, ex.company_name, upgrade ? poc.name : null, scores.tier, cfg, now);
+    if (scores.tier !== existing.tier) {
+      await onTierReached(existing.id, ex.company_name, upgrade ? poc.name : null, scores.tier, cfg, now);
+      const rank = { cold: 0, warm: 1, hot: 2 } as Record<string, number>;
+      if ((rank[scores.tier] ?? 0) > (rank[existing.tier] ?? 0)) {
+        await notifyLead({ leadId: existing.id, kind: "tier_up", source: item.source_type ?? "news", company: ex.company_name,
+          signalType: ex.signal_type, why: upgrade ? ex.why_now : null, tier: scores.tier }).catch(() => undefined);
+      }
+    }
     return { outcome: { kind: "lead", id: existing.id, lead_id: existing.lead_id, created: false, tier: scores.tier, score: scores.priority_score }, extraction: ex, model, article };
   }
 
@@ -216,6 +224,10 @@ export async function processItem(item: SourceItem, cfg: RadarConfig, now = new 
     await db().from("lead_contacts").insert({ lead_id: inserted.id, source: "source_text", name: poc.name, title: poc.designation });
   }
   await onTierReached(inserted.id, ex.company_name, poc.name, scores.tier, cfg, now);
+  await notifyLead({
+    leadId: inserted.id, kind: item.source_type === "inbound" ? "inbound" : "new_lead", source: item.source_type ?? "news",
+    company: ex.company_name, signalType: ex.signal_type, why: ex.why_now, tier: scores.tier,
+  }).catch((e) => console.warn(`notify ${ex.company_name}: ${(e as Error).message}`));
 
   return { outcome: { kind: "lead", id: inserted.id, lead_id, created: true, tier: scores.tier, score: scores.priority_score }, extraction: ex, model, article };
 }
