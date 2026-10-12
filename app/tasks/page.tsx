@@ -2,7 +2,9 @@ import Link from "next/link";
 import { setTaskStatus } from "@/app/actions";
 import { ActionButton } from "@/app/components/ActionButton";
 import { CopyButton } from "@/app/components/CopyButton";
-import { getTasks } from "@/lib/data";
+import { SendDraft } from "@/app/components/SendDraft";
+import { emailBodyFromDraft } from "@/lib/compose";
+import { getLeadExtras, getTasks } from "@/lib/data";
 import { formatDate } from "@/lib/format";
 import { isAdmin, showSample } from "@/lib/session";
 import { CHANNEL_LABEL, TIER_STYLE } from "@/lib/ui";
@@ -16,6 +18,11 @@ export default async function Tasks() {
   const tasks = all.filter((t: Task) => sample || !t.leads?.is_synthetic);
   const open = tasks.filter((t: Task) => t.status === "open");
   const closed = tasks.filter((t: Task) => t.status !== "open");
+  const { contacts } = await getLeadExtras([...new Set(open.map((t: Task) => t.lead_id).filter(Boolean))] as string[]);
+  const recipient = (leadId: string | null) => {
+    const cs = leadId ? contacts.get(leadId) ?? [] : [];
+    return cs.find((c) => c.email && c.match !== "adjacent_role") ?? cs.find((c) => c.email) ?? null;
+  };
   return (
     <div className="space-y-4">
       <div>
@@ -35,10 +42,11 @@ export default async function Tasks() {
           {t.email_draft ? (
             <div className="mt-3 space-y-2 text-sm">
               <p><span className="text-fg-3">Subject:</span> {t.email_subject}</p>
-              <pre className="whitespace-pre-wrap rounded-md bg-surface-2 p-3 font-sans text-fg border border-line">{t.email_draft}</pre>
+<pre className="whitespace-pre-wrap rounded-md bg-surface-2 p-3 font-sans text-fg">{emailBodyFromDraft(t.email_draft)}</pre>
+              {t.lead_id && <SendDraft leadId={t.lead_id} to={recipient(t.lead_id)?.email ?? null} toName={recipient(t.lead_id)?.name ?? null} subject={t.email_subject ?? ""} body={emailBodyFromDraft(t.email_draft)} admin={admin} />}
               {t.call_opener && <p><span className="text-fg-3">Call opener:</span> {t.call_opener}</p>}
               <div className="flex flex-wrap gap-2">
-                <CopyButton text={`Subject: ${t.email_subject}\n\n${t.email_draft}`} label="Copy email" />
+                <CopyButton text={`Subject: ${t.email_subject}\n\n${emailBodyFromDraft(t.email_draft)}`} label="Copy email" />
                 {t.call_opener && <CopyButton text={t.call_opener} label="Copy opener" />}
               </div>
               {t.drafted_model && <p className="text-xs text-fg-3">Drafted by {t.drafted_model}. Check names and numbers before sending.</p>}

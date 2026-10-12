@@ -6,6 +6,8 @@ import { ActionChecklist } from "@/app/components/ActionChecklist";
 import { Card, SampleBadge, TierBadge } from "@/app/components/Badges";
 import { CopyButton } from "@/app/components/CopyButton";
 import { ScoreBars } from "@/app/components/ScoreBars";
+import { SendDraft } from "@/app/components/SendDraft";
+import { emailBodyFromDraft, linkedinNoteFromDraft } from "@/lib/compose";
 import { StageSelect } from "@/app/components/StageSelect";
 import { getActivity, getConfig, getContacts, getLead, getTasks } from "@/lib/data";
 import { formatDate, formatDateTimeIst, formatInr } from "@/lib/format";
@@ -46,6 +48,8 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
   const drafts = tasks.filter((t) => t.email_draft);
   const locked = !admin;
   const sourceUrl = lead.source_url ?? lead.post_link;
+  // Who the draft goes to: a verified email (Lusha) first; the article's contact otherwise has no address.
+  const emailContact = contacts.find((c) => c.email && c.match !== "adjacent_role") ?? contacts.find((c) => c.email) ?? null;
 
   return (
     <div className="space-y-5">
@@ -133,18 +137,25 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
           <Card title="Drafts" action={<span className="text-xs text-fg-3">Never sent automatically</span>}>
             {drafts.length === 0 ? (
               <p className="text-sm text-fg-3">No draft yet. Use Draft email for an intro email, a LinkedIn note and a call opener.</p>
-            ) : drafts.map((t) => (
-              <div key={t.id} className="space-y-2 text-sm">
-                <p><span className="text-fg-3">Subject:</span> {t.email_subject}</p>
-                <pre className="whitespace-pre-wrap rounded-md bg-surface-2 p-3 font-sans text-fg">{t.email_draft}</pre>
-                {t.call_opener && <p><span className="text-fg-3">Call opener:</span> {t.call_opener}</p>}
-                <div className="flex flex-wrap gap-2">
-                  <CopyButton text={`Subject: ${t.email_subject}\n\n${t.email_draft}`} label="Copy email" />
-                  {t.call_opener && <CopyButton text={t.call_opener} label="Copy opener" />}
-                  {t.drafted_model && <span className="self-center text-xs text-fg-3">{t.drafted_model}</span>}
+            ) : drafts.map((t) => {
+              const body = emailBodyFromDraft(t.email_draft ?? "");
+              const note = linkedinNoteFromDraft(t.email_draft ?? "");
+              return (
+                <div key={t.id} className="space-y-3 text-sm">
+                  <p><span className="text-fg-3">Subject:</span> {t.email_subject}</p>
+                  <pre className="whitespace-pre-wrap rounded-md bg-surface-2 p-3 font-sans text-fg">{body}</pre>
+                  <SendDraft leadId={id} to={emailContact?.email ?? null} toName={emailContact?.name ?? null} subject={t.email_subject ?? ""} body={body} admin={admin} />
+                  <div className="flex flex-wrap gap-2">
+                    <CopyButton text={`Subject: ${t.email_subject}\n\n${body}`} label="Copy email" />
+                    {note && <CopyButton text={note} label="Copy LinkedIn note" />}
+                    {t.call_opener && <CopyButton text={t.call_opener} label="Copy call opener" />}
+                    {t.drafted_model && <span className="self-center text-xs text-fg-3">Drafted by {t.drafted_model}. Check before sending.</span>}
+                  </div>
+                  {note && <p className="text-xs text-fg-3"><span className="font-medium text-fg-2">LinkedIn note:</span> {note}</p>}
+                  {t.call_opener && <p className="text-xs text-fg-3"><span className="font-medium text-fg-2">Call opener:</span> {t.call_opener}</p>}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </Card>
           <Card title="Summary">
             <p className="text-sm text-fg-2">{lead.summary}</p>

@@ -117,6 +117,21 @@ export async function completeAction(leadId: string, key: string, title: string,
   } catch (e) { return fail(e); }
 }
 
+/** Ananya sent the draft from her own mailbox: tick the email action and move a new lead to Contacted. */
+export async function markEmailSent(leadId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const r = await completeAction(leadId, "email", "Intro email sent", true);
+    if (!r.ok) return r;
+    const { data: lead } = await db().from("leads").select("pipeline_stage").eq("id", leadId).single();
+    if (lead?.pipeline_stage === "new") {
+      await db().from("leads").update({ pipeline_stage: "contacted", updated_at: new Date().toISOString() }).eq("id", leadId);
+      await db().from("lead_stage_events").insert({ lead_id: leadId, from_stage: "new", to_stage: "contacted" });
+    }
+    return done(lead?.pipeline_stage === "new" ? "Logged as sent. Moved to Contacted." : "Logged as sent.");
+  } catch (e) { return fail(e); }
+}
+
 export async function setTheme(theme: "light" | "dark" | "system") {
   (await cookies()).set("radar_theme", theme, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
   revalidatePath("/", "layout");
