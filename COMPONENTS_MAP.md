@@ -2,7 +2,7 @@
 
 ![CSR Partnership Radar components map](docs/components-map.png)
 
-Source: [docs/components-map.svg](docs/components-map.svg)
+PDF: [docs/components-map.pdf](docs/components-map.pdf) · Source: [docs/components-map.svg](docs/components-map.svg)
 
 | Box | What it is | App part |
 |---|---|---|
