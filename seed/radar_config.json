@@ -123,5 +123,11 @@
   "lusha_monthly_cap": 30,
   "ngo_name": "Welfare for Youth",
   "ngo_outcome": "84% of our candidates join the organisations we receive funding from and are retained for 3+ years.",
-  "ngo_programme": "We develop skills and educate youth, freshers and school dropouts so they are capable of working as operators at the funding company's own sites."
+  "ngo_programme": "We develop skills and educate youth, freshers and school dropouts so they are capable of working as operators at the funding company's own sites.",
+  "meeting_hour_ist": 15,
+  "meeting_minutes": 20,
+  "meeting_skip_weekends": false,
+  "calendly_event_type_uri": "",
+  "calendly_scheduling_url": "",
+  "auto_book_min_confidence": 0.8
 }

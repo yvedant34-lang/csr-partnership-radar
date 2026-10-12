@@ -47,7 +47,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <CoverageStrip run={coverage.run} queued={coverage.queued} />
       </header>
 
-      <NotificationInbox items={inbox} leads={new Map(leads.map((l) => [l.id, l]))} actions={actions} admin={admin} today={today} />
+      <NotificationInbox items={inbox.filter((n) => !n.lead_id || leads.some((l) => l.id === n.lead_id))} leads={new Map(leads.map((l) => [l.id, l]))} actions={actions} admin={admin} today={today} />
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Kpi label="Call this week" value={hot.length} tone="hot" hint="Hot, posted in 7 days" />

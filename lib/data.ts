@@ -231,3 +231,14 @@ export async function unreadNotificationCount() {
   const { count } = await db().from("notifications").select("id", { count: "exact", head: true }).is("read_at", null);
   return count ?? 0;
 }
+
+export interface Meeting {
+  id: string; status: string; proposed_start: string | null; start_time: string | null; invitee_name: string | null;
+  invitee_email: string | null; reply_text: string | null; reply_intent: string | null; reply_confidence: number | null;
+  reschedule_url: string | null; cancel_url: string | null; error: string | null; created_at: string;
+}
+
+export async function getMeetings(leadId: string): Promise<Meeting[]> {
+  const { data } = await db().from("meetings").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
+  return (data ?? []) as Meeting[];
+}

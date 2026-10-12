@@ -36,6 +36,12 @@ export interface RadarConfig {
   ngo_name: string;
   ngo_programme: string; // what the programme does
   ngo_outcome: string; // one real, measured outcome cited in drafts; empty = placeholder, never invented
+  meeting_hour_ist: number; // the first email always proposes this hour, the next day
+  meeting_minutes: number;
+  meeting_skip_weekends: boolean;
+  calendly_event_type_uri: string; // which Calendly event type bookings use
+  calendly_scheduling_url: string; // public link offered as the fallback in the first email
+  auto_book_min_confidence: number; // Gemini's reading of a reply must be at least this sure to book without a click
 }
 
 /** Strips the _note/_inferred keys from the JSON file. The DB row (radar_config.config) has the same shape. */

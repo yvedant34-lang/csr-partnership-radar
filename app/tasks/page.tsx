@@ -4,7 +4,7 @@ import { ActionButton } from "@/app/components/ActionButton";
 import { CopyButton } from "@/app/components/CopyButton";
 import { SendDraft } from "@/app/components/SendDraft";
 import { emailBodyFromDraft } from "@/lib/compose";
-import { getLeadExtras, getTasks } from "@/lib/data";
+import { getConfig, getLeadExtras, getTasks } from "@/lib/data";
 import { formatDate } from "@/lib/format";
 import { isAdmin, showSample } from "@/lib/session";
 import { CHANNEL_LABEL, TIER_STYLE } from "@/lib/ui";
@@ -14,7 +14,8 @@ export const dynamic = "force-dynamic";
 type Task = Awaited<ReturnType<typeof getTasks>>[number];
 
 export default async function Tasks() {
-  const [all, admin, sample] = await Promise.all([getTasks(), isAdmin(), showSample()]);
+  const [all, admin, sample, cfg] = await Promise.all([getTasks(), isAdmin(), showSample(), getConfig()]);
+  const meetingPrefs = { hour: cfg.meeting_hour_ist, minutes: cfg.meeting_minutes, skipWeekends: cfg.meeting_skip_weekends, schedulingUrl: cfg.calendly_scheduling_url || null };
   const tasks = all.filter((t: Task) => sample || !t.leads?.is_synthetic);
   const open = tasks.filter((t: Task) => t.status === "open");
   const closed = tasks.filter((t: Task) => t.status !== "open");
@@ -43,7 +44,7 @@ export default async function Tasks() {
             <div className="mt-3 space-y-2 text-sm">
               <p><span className="text-fg-3">Subject:</span> {t.email_subject}</p>
 <pre className="whitespace-pre-wrap rounded-md bg-surface-2 p-3 font-sans text-fg">{emailBodyFromDraft(t.email_draft)}</pre>
-              {t.lead_id && <SendDraft leadId={t.lead_id} to={recipient(t.lead_id)?.email ?? null} toName={recipient(t.lead_id)?.name ?? null} subject={t.email_subject ?? ""} body={emailBodyFromDraft(t.email_draft)} admin={admin} />}
+              {t.lead_id && <SendDraft leadId={t.lead_id} to={recipient(t.lead_id)?.email ?? null} toName={recipient(t.lead_id)?.name ?? null} subject={t.email_subject ?? ""} body={emailBodyFromDraft(t.email_draft)} admin={admin} meeting={meetingPrefs} />}
               {t.call_opener && <p><span className="text-fg-3">Call opener:</span> {t.call_opener}</p>}
               <div className="flex flex-wrap gap-2">
                 <CopyButton text={`Subject: ${t.email_subject}\n\n${emailBodyFromDraft(t.email_draft)}`} label="Copy email" />

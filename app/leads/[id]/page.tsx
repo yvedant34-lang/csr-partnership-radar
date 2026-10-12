@@ -10,7 +10,10 @@ import { SendDraft } from "@/app/components/SendDraft";
 import { emailBodyFromDraft, linkedinNoteFromDraft } from "@/lib/compose";
 import { StageSelect } from "@/app/components/StageSelect";
 import { LifecycleChart } from "@/app/components/LifecycleChart";
-import { getActivity, getConfig, getContacts, getLead, getStageEvents, getTasks } from "@/lib/data";
+import { getActivity, getConfig, getContacts, getLead, getMeetings, getStageEvents, getTasks } from "@/lib/data";
+import { ReplyBox } from "@/app/components/ReplyBox";
+import { bookMeeting } from "@/app/actions";
+import { formatSlot } from "@/lib/meeting";
 import { formatDate, formatDateTimeIst, formatInr } from "@/lib/format";
 import { nextActions } from "@/lib/next-actions";
 import { estimateConfidence, gateWords } from "@/lib/scoring";
@@ -40,7 +43,9 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
   const lead = await getLead(id);
   if (!lead) notFound();
   const [cfg, contacts, tasks, admin] = await Promise.all([getConfig(), getContacts(id), getTasks(id), isAdmin()]);
-  const [activity, stageEvents] = await Promise.all([getActivity(id, lead.posted_at), getStageEvents(id)]);
+  const [activity, stageEvents, meetings] = await Promise.all([getActivity(id, lead.posted_at), getStageEvents(id), getMeetings(id)]);
+  const meeting = meetings[0] ?? null;
+  const INTENT: Record<string, string> = { accept_proposed: "said yes to the proposed time", propose_other_time: "suggested another time", decline: "said no", unclear: "reply was unclear" };
   const actions = nextActions(lead, contacts, tasks, cfg);
   const conf = estimateConfidence({ ...lead, has_contact_email: contacts.some((c) => c.email) });
   const sourceContacts = contacts.filter((c) => c.source === "source_text");
@@ -50,6 +55,7 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
   const locked = !admin;
   const sourceUrl = lead.source_url ?? lead.post_link;
   // Who the draft goes to: a verified email (Lusha) first; the article's contact otherwise has no address.
+  const meetingPrefs = { hour: cfg.meeting_hour_ist, minutes: cfg.meeting_minutes, skipWeekends: cfg.meeting_skip_weekends, schedulingUrl: cfg.calendly_scheduling_url || null };
   const emailContact = contacts.find((c) => c.email && c.match !== "adjacent_role") ?? contacts.find((c) => c.email) ?? null;
 
   return (
@@ -122,6 +128,36 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
           <Card title="Life cycle">
             <LifecycleChart events={stageEvents.length ? stageEvents : [{ stage: lead.pipeline_stage, at: lead.posted_at }]} now={new Date().toISOString()} />
           </Card>
+          <Card title="Meeting" action={<span className="text-xs text-fg-3">Calendly</span>}>
+            {!meeting && <p className="text-sm text-fg-3">No meeting proposed yet. The first email asks for {cfg.meeting_minutes} minutes at {cfg.meeting_hour_ist % 12 || 12} {cfg.meeting_hour_ist < 12 ? "am" : "pm"} IST the next day; press I sent it after sending.</p>}
+            {meeting && (
+              <div className="space-y-2 text-sm">
+                <p>
+                  <span className={`mr-2 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${meeting.status === "booked" ? "bg-good/15 text-good" : meeting.status === "declined" ? "bg-hot-bg text-hot" : "bg-surface-2 text-fg-2"}`}>{meeting.status.replace("_", " ")}</span>
+                  {meeting.status === "booked" && meeting.start_time ? <>Booked for <strong>{formatSlot(new Date(meeting.start_time))}</strong>{meeting.invitee_name ? ` with ${meeting.invitee_name}` : ""}.</>
+                    : meeting.proposed_start ? <>Proposed {formatSlot(new Date(meeting.proposed_start))}{meeting.invitee_email && admin ? ` to ${meeting.invitee_email}` : ""}.</> : null}
+                </p>
+                {meeting.reply_intent && <p className="text-xs text-fg-3">Their reply: {INTENT[meeting.reply_intent] ?? meeting.reply_intent} ({Math.round(Number(meeting.reply_confidence ?? 0) * 100)}% sure).</p>}
+                {meeting.error && meeting.status !== "booked" && <p className="text-xs text-warm">Not booked automatically: {meeting.error}.</p>}
+                {meeting.status === "booked" && (
+                  <p className="flex gap-3 text-xs">
+                    {meeting.reschedule_url && <a href={meeting.reschedule_url} target="_blank" rel="noreferrer" className="underline">Reschedule</a>}
+                    {meeting.cancel_url && <a href={meeting.cancel_url} target="_blank" rel="noreferrer" className="underline">Cancel</a>}
+                  </p>
+                )}
+                {meeting.status === "needs_review" && (meeting.start_time ?? meeting.proposed_start) && (
+                  <ActionButton size="sm" variant="primary" action={bookMeeting.bind(null, meeting.id)} disabled={locked}
+                    label={`Book ${formatSlot(new Date((meeting.start_time ?? meeting.proposed_start)!))} on Calendly`} pendingLabel="Booking…" />
+                )}
+              </div>
+            )}
+            {meeting?.status !== "booked" && (
+              <div className="mt-3 border-t border-line pt-3">
+                <p className="label mb-2">Log their reply</p>
+                <ReplyBox leadId={id} admin={admin} />
+              </div>
+            )}
+          </Card>
           <Card title="Next actions">
             <ActionChecklist items={actions.map((a) => ({ ...a, leadId: id, sourceUrl }))} admin={admin} today={todayIst()} empty="No actions: this lead is closed." />
           </Card>
@@ -148,7 +184,7 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
                 <div key={t.id} className="space-y-3 text-sm">
                   <p><span className="text-fg-3">Subject:</span> {t.email_subject}</p>
                   <pre className="whitespace-pre-wrap rounded-md bg-surface-2 p-3 font-sans text-fg">{body}</pre>
-                  <SendDraft leadId={id} to={emailContact?.email ?? null} toName={emailContact?.name ?? null} subject={t.email_subject ?? ""} body={body} admin={admin} />
+                  <SendDraft leadId={id} to={emailContact?.email ?? null} toName={emailContact?.name ?? null} subject={t.email_subject ?? ""} body={body} admin={admin} meeting={meetingPrefs} />
                   <div className="flex flex-wrap gap-2">
                     <CopyButton text={`Subject: ${t.email_subject}\n\n${body}`} label="Copy email" />
                     {note && <CopyButton text={note} label="Copy LinkedIn note" />}

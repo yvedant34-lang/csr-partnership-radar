@@ -47,9 +47,13 @@ Every new signal lands in the **New signals** inbox at the top of the dashboard,
 
 Each lead page also shows its **life cycle** as a step line from Ghosted (lowest) to Invoice signed (highest).
 
+## Meetings (Calendly)
+
+The first email always proposes a 20 minute call at **3 pm IST the next day** (set in Settings). The time is filled in when Ananya opens the draft in Gmail or Outlook, so "tomorrow" is always right, and the email offers the Calendly link as a fallback. When the lead replies, paste the reply on the lead page or forward it to `POST /api/inbound` with `{"kind": "reply", "from": "...", "text": "..."}`. Gemini reads it; a clear yes (or a clear new time) is booked on Calendly automatically and the lead moves to Meeting. Anything less certain waits for one click. Booking through the API needs `CALENDLY_API_KEY` and a Calendly Standard plan or above; choose the event type in Settings.
+
 ## Environment variables
 
-`GEMINI_API_KEY`, `GEMINI_MODEL` (optional first choice), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server only), `RESEND_API_KEY`, `DIGEST_TO_EMAIL`, `DIGEST_FROM_EMAIL` (optional, needs a verified Resend domain), `CRON_SECRET`, `ADMIN_PASSCODE`, `LUSHA_API_KEY` (optional), `APP_URL`, `INBOUND_SECRET` (for the live feed).
+`GEMINI_API_KEY`, `GEMINI_MODEL` (optional first choice), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server only), `RESEND_API_KEY`, `DIGEST_TO_EMAIL`, `DIGEST_FROM_EMAIL` (optional, needs a verified Resend domain), `CRON_SECRET`, `ADMIN_PASSCODE`, `LUSHA_API_KEY` (optional), `APP_URL`, `INBOUND_SECRET` (for the live feed), `CALENDLY_API_KEY` (meetings).
 
 ## Scripts
 

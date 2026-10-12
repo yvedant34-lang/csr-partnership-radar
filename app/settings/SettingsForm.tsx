@@ -37,7 +37,9 @@ function Fieldset({ title, children }: { title: string; children: React.ReactNod
   );
 }
 
-export function SettingsForm({ cfg, disabled, credits }: { cfg: RadarConfig; disabled: boolean; credits: number }) {
+export interface CalendlyState { connected: boolean; user?: string; error?: string; types: { uri: string; name: string; duration: number; url: string }[] }
+
+export function SettingsForm({ cfg, disabled, credits, calendly }: { cfg: RadarConfig; disabled: boolean; credits: number; calendly: CalendlyState }) {
   const [state, action, pending] = useActionState(saveSettings, null);
   return (
     <form action={action} className="space-y-4">
@@ -84,6 +86,37 @@ export function SettingsForm({ cfg, disabled, credits }: { cfg: RadarConfig; dis
           </label>
         ))}
         <Slider name="too_old_days" label="Age limit (days)" value={cfg.gates.too_old_days} max={60} />
+      </Fieldset>
+
+      <Fieldset title="Meetings and Calendly">
+        <p className="text-sm">
+          {calendly.connected
+            ? <span className="text-good">Connected as {calendly.user}.</span>
+            : <span className="text-warm">{calendly.error ?? "Not connected: add CALENDLY_API_KEY (a personal access token from calendly.com/integrations/api_webhooks)."}</span>}
+        </p>
+        <label className="block text-sm">Event type to book
+          <select name="calendly_event_type_uri" defaultValue={cfg.calendly_event_type_uri} disabled={!calendly.connected}
+            className="mt-1 w-full rounded-full border border-line bg-surface-2 px-3 py-1.5 disabled:opacity-50">
+            <option value="">Choose one</option>
+            {calendly.types.map((t) => <option key={t.uri} value={t.uri}>{t.name} · {t.duration} min</option>)}
+          </select>
+        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm">First email proposes (IST, next day)
+            <select name="meeting_hour_ist" defaultValue={cfg.meeting_hour_ist} className="mt-1 w-full rounded-full border border-line bg-surface-2 px-3 py-1.5">
+              {[9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((h) => <option key={h} value={h}>{h % 12 || 12}:00 {h < 12 ? "am" : "pm"}</option>)}
+            </select>
+          </label>
+          <label className="text-sm">Call length (minutes)
+            <input name="meeting_minutes" type="number" min={10} max={60} defaultValue={cfg.meeting_minutes} className="mt-1 w-full rounded-full border border-line bg-surface-2 px-3 py-1.5" />
+          </label>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="meeting_skip_weekends" defaultChecked={cfg.meeting_skip_weekends} className="accent-current" />
+          If the next day is a Saturday or Sunday, propose Monday instead
+        </label>
+        <Slider name="auto_book_pct" label="Book without a click when Gemini is at least (%) sure" value={Math.round(cfg.auto_book_min_confidence * 100)} max={100} />
+        <p className="text-xs text-fg-3">A clear yes to the proposed time, or a clear new time, books on Calendly and Calendly sends the invite. Anything less certain lands in your inbox with a one-click Book button.</p>
       </Fieldset>
 
       <Fieldset title="Drafts and contacts">

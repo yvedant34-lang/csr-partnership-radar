@@ -6,7 +6,10 @@ import { revalidatePath } from "next/cache";
 import { normaliseConfig, type GateName, type RadarConfig } from "@/lib/config";
 import { STAGES, type Stage } from "@/lib/data";
 import { draftOutreach, saveDraftTask } from "@/lib/drafts";
+import { eventTypes } from "@/lib/calendly";
 import { intake } from "@/lib/intake";
+import { formatSlot, nextDaySlot } from "@/lib/meeting";
+import { bookSlot, handleReply } from "@/lib/replies";
 import { findContacts, revealEmail } from "@/lib/lusha";
 import { loadConfig, rescoreAll } from "@/lib/pipeline";
 import { isAdmin, login, logout, requireAdmin } from "@/lib/session";
@@ -118,17 +121,21 @@ export async function completeAction(leadId: string, key: string, title: string,
 }
 
 /** Ananya sent the draft from her own mailbox: tick the email action and move a new lead to Contacted. */
-export async function markEmailSent(leadId: string): Promise<ActionResult> {
+export async function markEmailSent(leadId: string, to?: string | null, toName?: string | null): Promise<ActionResult> {
   try {
     await requireAdmin();
     const r = await completeAction(leadId, "email", "Intro email sent", true);
     if (!r.ok) return r;
+    // The email proposed tomorrow at the configured hour: remember that slot so a "yes" can be booked.
+    const cfg = await loadConfig();
+    const slot = nextDaySlot(new Date(), cfg.meeting_hour_ist, cfg.meeting_skip_weekends);
+    await db().from("meetings").insert({ lead_id: leadId, status: "proposed", proposed_start: slot.toISOString(), invitee_email: to ?? null, invitee_name: toName ?? null });
     const { data: lead } = await db().from("leads").select("pipeline_stage").eq("id", leadId).single();
     if (lead?.pipeline_stage === "new") {
       await db().from("leads").update({ pipeline_stage: "contacted", updated_at: new Date().toISOString() }).eq("id", leadId);
       await db().from("lead_stage_events").insert({ lead_id: leadId, from_stage: "new", to_stage: "contacted" });
     }
-    return done(lead?.pipeline_stage === "new" ? "Logged as sent. Moved to Contacted." : "Logged as sent.");
+    return done(`${lead?.pipeline_stage === "new" ? "Logged as sent, moved to Contacted." : "Logged as sent."} Proposed ${formatSlot(slot)}.`);
   } catch (e) { return fail(e); }
 }
 
@@ -145,6 +152,37 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
     await requireAdmin();
     await db().from("notifications").update({ read_at: new Date().toISOString() }).is("read_at", null);
     return done("All cleared.");
+  } catch (e) { return fail(e); }
+}
+
+/** Ananya pastes the lead's reply: read it, and book on Calendly if it is a clear yes. */
+export async function logReply(leadId: string, _: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const text = String(form.get("reply") ?? "").trim();
+    if (text.length < 2) return { ok: false, message: "Paste the reply first." };
+    const r = await handleReply(leadId, text, await loadConfig(), { from: String(form.get("from") ?? "") || null });
+    if (r.status === "booked") return done(r.message);
+    revalidatePath("/", "layout");
+    return { ok: true, message: r.message };
+  } catch (e) { return fail(e); }
+}
+
+/** One click to book a reviewed slot (or the original proposal). */
+export async function bookMeeting(meetingId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const { data: m } = await db().from("meetings").select("*").eq("id", meetingId).single();
+    if (!m) return { ok: false, message: "Meeting not found." };
+    const start = m.start_time ?? m.proposed_start;
+    if (!start) return { ok: false, message: "No time to book. Paste a reply with a time." };
+    if (!m.invitee_email) return { ok: false, message: "No email address for the invite. Find or reveal the contact first." };
+    const cfg = await loadConfig();
+    const r = await bookSlot(m.lead_id, new Date(start), {
+      name: m.invitee_name ?? "Guest", email: m.invitee_email, cfg,
+      save: async (fields) => { await db().from("meetings").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", meetingId); return meetingId; },
+    });
+    return r.status === "booked" ? done(r.message) : { ok: false, message: r.message };
   } catch (e) { return fail(e); }
 }
 
@@ -204,7 +242,19 @@ export async function saveSettings(_: ActionResult | null, form: FormData): Prom
       ngo_outcome: String(form.get("ngo_outcome") ?? "").trim(),
       lusha_monthly_cap: numberField(form, "lusha_monthly_cap", cur.lusha_monthly_cap),
       lusha_auto_tiers: form.getAll("lusha_auto_tiers").map(String) as RadarConfig["lusha_auto_tiers"],
+      meeting_hour_ist: numberField(form, "meeting_hour_ist", cur.meeting_hour_ist),
+      meeting_minutes: numberField(form, "meeting_minutes", cur.meeting_minutes),
+      meeting_skip_weekends: form.get("meeting_skip_weekends") === "on",
+      auto_book_min_confidence: numberField(form, "auto_book_pct", Math.round(cur.auto_book_min_confidence * 100)) / 100,
+      calendly_event_type_uri: form.has("calendly_event_type_uri") ? String(form.get("calendly_event_type_uri") ?? "") : cur.calendly_event_type_uri,
     });
+    // The public booking link offered as the fallback in the first email comes from the chosen event type.
+    if (next.calendly_event_type_uri && next.calendly_event_type_uri !== cur.calendly_scheduling_url) {
+      try {
+        const t = (await eventTypes()).find((e) => e.uri === next.calendly_event_type_uri);
+        if (t) next.calendly_scheduling_url = t.scheduling_url;
+      } catch { /* keep the previous link */ }
+    }
     if (next.tiers.warm_min >= next.tiers.hot_min) return { ok: false, message: "The warm threshold must be below the hot threshold." };
     await db().from("radar_config").update({ config: next, updated_at: new Date().toISOString() }).eq("id", 1);
     return done("Settings saved. Use Rescore all leads to apply them to existing leads.");

@@ -207,6 +207,29 @@ create table if not exists notifications (
 );
 create index if not exists notifications_unread_idx on notifications (read_at, created_at desc);
 
+-- Meeting proposals and Calendly bookings. The first email proposes a slot; a reply decides what happens.
+create table if not exists meetings (
+  id               uuid primary key default gen_random_uuid(),
+  lead_id          uuid not null references leads(id) on delete cascade,
+  status           text not null default 'proposed'
+                   check (status in ('proposed','booked','needs_review','declined','failed','cancelled')),
+  proposed_start   timestamptz,
+  start_time       timestamptz,
+  invitee_name     text,
+  invitee_email    text,
+  reply_text       text,
+  reply_intent     text,
+  reply_confidence numeric,
+  calendly_invitee_uri text,
+  calendly_event_uri   text,
+  reschedule_url   text,
+  cancel_url       text,
+  error            text,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+create index if not exists meetings_lead_idx on meetings (lead_id, created_at desc);
+
 create table if not exists digests (
   id           uuid primary key default gen_random_uuid(),
   week         text not null unique,                      -- 2026-W42 (ISO week, IST)
@@ -232,6 +255,7 @@ alter table lead_contacts     enable row level security;
 alter table lusha_spend       enable row level security;
 alter table gemini_model_status enable row level security;
 alter table notifications     enable row level security;
+alter table meetings          enable row level security;
 
 do $$
 declare t text;
