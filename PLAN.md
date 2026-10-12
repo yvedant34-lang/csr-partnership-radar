@@ -208,32 +208,32 @@ Rendered as a hand-drawn SVG (~80 lines), muted tier palette, readable at 375px,
 ## 7. Phases (each ends with a "works / does not work" report)
 
 **Phase 1. Data and scoring**
-- [ ] Create Supabase project and run the SQL there (waiting on your go-ahead or keys)
+- [x] Supabase project `csr-partnership-radar` (Mumbai), schema + live seed + sample seed loaded
 - [x] `seed/schema.sql` (stage events folded in, no separate migration needed), `seed/seed_live.sql` generated from the CSV, verified on Postgres via PGlite
-- [ ] `seed/seed_synthetic.sql` (small, badged)
+- [x] `seed/seed_synthetic.sql` (5 invented rows, badged, toggle off by default)
 - [x] `lib/scoring.ts`, `lib/config.ts`, `lib/week.ts`, `lib/format.ts`
 - [x] Tests: 36 of 36 pass. All 15 CSV rows match score, tier, all 5 parts, flags, gates, estimate, proven funder.
 
 **Phase 2. Ingestion**
-- [ ] Confirm Gemini Flash model name from Google docs
-- [ ] `rss.ts`, `prefilter.ts`, `gemini.ts`, `pipeline.ts`, ingest + extract routes
-- [ ] Run ingest locally against live RSS; show the `ingestion_runs` row and extracted leads
-- [ ] Re-run the Zeta example and confirm score 60, warm, proven funder
+- [x] Gemini model ladder 3.8 Flash → 3.6 Flash → 3.5 Flash-Lite (free tier: 20 requests per model per day)
+- [x] `rss.ts`, `prefilter.ts`, `gemini.ts`, `article.ts` (full-article reading), `pipeline.ts`, ingest + extract routes
+- [x] Live ingest locally and on production (9/9 feeds); first hot lead: Bharat Electronics
+- [x] Zeta (LIVE-001) stays 60, warm, proven funder after RSS merges
 
 **Phase 3. Dashboard**
-- [ ] This Week, drawer, Proven Funders (Jan to Mar banner), Pipeline kanban, Policy, Paste a link, Settings + Rescore
-- [ ] Conversion chart
-- [ ] Sample data toggle (off by default, every synthetic row badged)
-- [ ] Verify in the browser at 1280px and 375px, with screenshots
+- [x] This Week, drawer, Proven Funders (Jan to Mar banner), Pipeline kanban, Policy, Paste a link, Settings + Rescore
+- [x] Conversion line chart (Pipeline + This Week)
+- [x] Sample data toggle (off by default, every synthetic row badged)
+- [x] Verified at 1280px and 375px
 
 **Phase 4. Tasks and digest**
-- [ ] Auto task + email draft + opener for every new hot lead
-- [ ] Tasks page with copy buttons
-- [ ] Digest builder, `/digest/[week]`, Resend send. Send one real test to `DIGEST_TO_EMAIL` and confirm it arrives.
+- [x] Auto task + email draft + LinkedIn note + opener for every new hot lead
+- [x] Tasks page with copy buttons
+- [x] Digest builder, `/digest/[week]`, Resend send: 2026-W42 delivered 12 Oct 2026
 
 **Phase 5. Deploy**
-- [ ] GitHub repo, Vercel project, env vars, crons
-- [ ] Trigger one live ingest on production, confirm it shows in the coverage strip
+- [x] GitHub repo (private), Vercel project, env vars, crons
+- [x] Live ingest on production, visible in the coverage strip
 - [ ] README (under 10 steps), `COMPONENTS_MAP.md`
 - [ ] Final check against "done means"
 
