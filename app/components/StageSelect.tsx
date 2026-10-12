@@ -13,7 +13,7 @@ export function StageSelect({ leadId, stage, disabled }: { leadId: string; stage
   const [msg, setMsg] = useState<string | null>(null);
   return (
     <label className="inline-flex items-center gap-2 text-sm">
-      <span className="text-stone-500">Stage</span>
+      <span className="text-fg-3">Stage</span>
       <select
         value={value}
         disabled={disabled || pending}
@@ -26,11 +26,11 @@ export function StageSelect({ leadId, stage, disabled }: { leadId: string; stage
             if (!r.ok) setValue(stage);
           });
         }}
-        className="rounded-md bg-white px-2 py-1 ring-1 ring-stone-300 disabled:opacity-60"
+        className="rounded-md border border-line bg-surface px-2 py-1 text-fg disabled:opacity-60"
       >
         {STAGES.map((s) => <option key={s} value={s}>{LABEL[s]}</option>)}
       </select>
-      {msg && <span className="text-xs text-red-700">{msg}</span>}
+      {msg && <span className="text-xs text-hot">{msg}</span>}
     </label>
   );
 }

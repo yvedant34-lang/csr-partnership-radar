@@ -10,8 +10,8 @@ export default async function Settings() {
   return (
     <div className="max-w-2xl space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Settings</h1>
-        <p className="mt-1 text-sm text-stone-600">Every weight and rule the score uses. Gemini never sets the score or the tier.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="mt-1 text-sm text-fg-2">Every weight and rule the score uses. Gemini never sets the score or the tier.</p>
         {!admin && <p className="mt-1 text-sm"><Link href="/login?next=/settings" className="underline">Enter the passcode</Link> to change these.</p>}
       </div>
       <SettingsForm cfg={cfg} disabled={!admin} credits={credits} />

@@ -4,7 +4,6 @@ import "server-only";
 // it never returns a score, tier or probability (lib/scoring.ts does that in plain code).
 
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
-const FALLBACK_MODEL = "gemini-3.6-flash";
 
 export const SIGNAL_TYPES = [
   "partner_search", "csr_tender_or_eoi", "new_initiative", "unspent_csr",
@@ -197,21 +196,52 @@ async function callModel(model: string, prompt: string, opts: GenerateOptions, a
   return text;
 }
 
-// Free tier caps each model at about 20 requests a day. Step down the Flash family when a model
-// is exhausted, overloaded or slow, and skip it until Google's stated reset time.
+// Free tier caps each model at about 20 requests a day. Step through the Flash family when a model
+// is exhausted, overloaded or slow, and skip it until Google's stated reset time. The skip list lives in
+// gemini_model_status so every serverless invocation knows, not just the one that hit the limit.
+// (gemini-2.5-* answer 404 for keys created after their cut-off, so they are not in the default list.)
+const DEFAULT_LADDER = [
+  "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3-flash-preview",
+  "gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest",
+];
 const downUntil = new Map<string, number>();
+let statusLoadedAt = 0;
 
 export function modelLadder(): string[] {
-  const primary = process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash";
-  const extra = (process.env.GEMINI_FALLBACK_MODELS ?? `${FALLBACK_MODEL},gemini-3.5-flash-lite`)
-    .split(",").map((m) => m.trim()).filter(Boolean);
-  return [...new Set([primary, ...extra])];
+  const primary = process.env.GEMINI_MODEL?.trim();
+  const extra = process.env.GEMINI_FALLBACK_MODELS?.split(",").map((m) => m.trim()).filter(Boolean) ?? DEFAULT_LADDER;
+  return [...new Set([...(primary ? [primary] : []), ...extra])];
+}
+
+async function statusStore() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  const { db } = await import("@/lib/supabase/server");
+  return db();
+}
+
+async function loadModelStatus() {
+  if (Date.now() - statusLoadedAt < 60_000) return;
+  statusLoadedAt = Date.now();
+  try {
+    const store = await statusStore();
+    const { data } = (await store?.from("gemini_model_status").select("model, down_until").gt("down_until", new Date().toISOString())) ?? { data: [] };
+    for (const r of data ?? []) downUntil.set(r.model, Math.max(downUntil.get(r.model) ?? 0, new Date(r.down_until).getTime()));
+  } catch { /* the in-memory list still works */ }
+}
+
+async function markDown(model: string, ms: number, reason: string) {
+  const until = Date.now() + ms;
+  downUntil.set(model, until);
+  try {
+    const store = await statusStore();
+    await store?.from("gemini_model_status").upsert({ model, down_until: new Date(until).toISOString(), reason: reason.slice(0, 200), updated_at: new Date().toISOString() });
+  } catch { /* best effort */ }
 }
 
 export async function generate(prompt: string, opts: GenerateOptions = {}): Promise<{ text: string; model: string }> {
-  const ladder = modelLadder();
+  await loadModelStatus();
   let lastError: unknown = null;
-  for (const model of ladder) {
+  for (const model of modelLadder()) {
     if ((downUntil.get(model) ?? 0) > Date.now()) continue;
     try {
       return { text: await callModel(model, prompt, opts), model };
@@ -221,10 +251,11 @@ export async function generate(prompt: string, opts: GenerateOptions = {}): Prom
       const timedOut = /timeout|aborted/i.test(err.message);
       const retryable = timedOut || err.status === 429 || err.status === 500 || err.status === 503 || err.status === 404;
       if (!retryable) throw e;
-      downUntil.set(model, Date.now() + Math.max(err.retryAfterMs ?? 0, 10 * 60_000));
+      // Daily cap: Google says how long (hours). Overload or timeout: rest the model for 10 minutes.
+      await markDown(model, Math.max(err.retryAfterMs ?? 0, 10 * 60_000), err.message);
     }
   }
-  throw lastError ?? new GeminiError("all Gemini models are rate limited; items stay queued", 429);
+  throw lastError ?? new GeminiError("all Gemini Flash models are rate limited; items stay queued", 429);
 }
 
 export async function extract(

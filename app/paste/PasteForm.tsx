@@ -10,20 +10,20 @@ export function PasteForm({ disabled }: { disabled: boolean }) {
     <form action={action} className="space-y-3">
       <label className="block text-sm">
         <span className="font-medium">Link</span>
-        <input name="url" type="url" placeholder="https://… (news article, company CSR page, LinkedIn post)" className="mt-1 w-full rounded-md bg-white px-3 py-2 ring-1 ring-stone-300" />
+        <input name="url" type="url" placeholder="https://… (news article, company CSR page, LinkedIn post)" className="mt-1 w-full rounded-md bg-surface px-3 py-2 border border-line" />
       </label>
       <label className="block text-sm">
         <span className="font-medium">Post or message text</span>
-        <span className="block text-xs text-stone-500">Required for LinkedIn and WhatsApp forwards. LinkedIn pages are never fetched.</span>
-        <textarea name="text" rows={8} className="mt-1 w-full rounded-md bg-white px-3 py-2 ring-1 ring-stone-300" />
+        <span className="block text-xs text-fg-3">Required for LinkedIn and WhatsApp forwards. LinkedIn pages are never fetched.</span>
+        <textarea name="text" rows={8} className="mt-1 w-full rounded-md bg-surface px-3 py-2 border border-line" />
       </label>
-      <button disabled={disabled || pending} className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+      <button disabled={disabled || pending} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg disabled:opacity-50">
         {pending ? "Reading and scoring…" : "Read and score"}
       </button>
       {state && (
-        <p role="status" className={`text-sm ${state.ok ? "text-stone-800" : "text-red-700"}`}>
+        <p role="status" className={`text-sm ${state.ok ? "text-fg" : "text-hot"}`}>
           {state.message}{" "}
-          {"leadId" in state && state.leadId && <Link href={`/?lead=${state.leadId}`} className="underline">Open the lead</Link>}
+          {"leadId" in state && state.leadId && <Link href={`/leads/${state.leadId}`} className="underline">Open the lead</Link>}
         </p>
       )}
     </form>

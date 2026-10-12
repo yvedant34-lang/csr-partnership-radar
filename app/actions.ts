@@ -98,6 +98,30 @@ export async function revealEmailAction(contactId: string): Promise<ActionResult
   } catch (e) { return fail(e); }
 }
 
+/** Tick or untick one of a lead's suggested next actions. Stored as a task row with the same action_key. */
+export async function completeAction(leadId: string, key: string, title: string, finished: boolean): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const status = finished ? "done" : "open";
+    const { data: byKey } = await db().from("tasks").select("id").eq("lead_id", leadId).eq("action_key", key).limit(1).maybeSingle();
+    if (byKey) {
+      await db().from("tasks").update({ status }).eq("id", byKey.id);
+    } else if (key === "call") {
+      const { data: call } = await db().from("tasks").select("id").eq("lead_id", leadId).eq("kind", "call").is("action_key", null).limit(1).maybeSingle();
+      if (call) await db().from("tasks").update({ status, action_key: "call" }).eq("id", call.id);
+      else await db().from("tasks").insert({ lead_id: leadId, kind: "call", title, status, action_key: key, due_date: comingMonday() });
+    } else {
+      await db().from("tasks").insert({ lead_id: leadId, kind: "action", title, status, action_key: key });
+    }
+    return done(finished ? "Done." : "Reopened.");
+  } catch (e) { return fail(e); }
+}
+
+export async function setTheme(theme: "light" | "dark" | "system") {
+  (await cookies()).set("radar_theme", theme, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
+  revalidatePath("/", "layout");
+}
+
 export async function setTaskStatus(taskId: string, status: "open" | "done" | "dropped"): Promise<ActionResult> {
   try {
     await requireAdmin();

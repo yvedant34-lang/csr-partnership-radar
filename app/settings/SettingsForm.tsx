@@ -21,8 +21,8 @@ function Slider({ name, label, value, max }: { name: string; label: string; valu
   const [v, setV] = useState(value);
   return (
     <label className="grid grid-cols-[9rem_1fr_2.5rem] items-center gap-2 text-sm">
-      <span className="text-stone-700">{label}</span>
-      <input type="range" name={name} min={0} max={max} value={v} onChange={(e) => setV(Number(e.target.value))} className="accent-stone-700" />
+      <span className="text-fg-2">{label}</span>
+      <input type="range" name={name} min={0} max={max} value={v} onChange={(e) => setV(Number(e.target.value))} className="accent-current" />
       <span className="text-right tabular-nums">{v}</span>
     </label>
   );
@@ -30,8 +30,8 @@ function Slider({ name, label, value, max }: { name: string; label: string; valu
 
 function Fieldset({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <fieldset className="space-y-2 rounded-lg bg-white p-4 ring-1 ring-stone-200">
-      <legend className="px-1 text-sm font-semibold text-stone-800">{title}</legend>
+    <fieldset className="space-y-2 rounded-lg bg-surface p-4 border border-line">
+      <legend className="px-1 text-sm font-semibold text-fg">{title}</legend>
       {children}
     </fieldset>
   );
@@ -45,16 +45,16 @@ export function SettingsForm({ cfg, disabled, credits }: { cfg: RadarConfig; dis
         <div className="flex flex-wrap gap-3 text-sm">
           {SECTORS.map((s) => (
             <label key={s} className="inline-flex items-center gap-1.5">
-              <input type="checkbox" name="focus_sectors" value={s} defaultChecked={cfg.focus_sectors.includes(s)} className="accent-stone-700" />{s}
+              <input type="checkbox" name="focus_sectors" value={s} defaultChecked={cfg.focus_sectors.includes(s)} className="accent-current" />{s}
             </label>
           ))}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm">Home city<input name="home_city" defaultValue={cfg.home_city} className="mt-1 w-full rounded-md px-2 py-1.5 ring-1 ring-stone-300" /></label>
-          <label className="text-sm">Home state<input name="home_state" defaultValue={cfg.home_state} className="mt-1 w-full rounded-md px-2 py-1.5 ring-1 ring-stone-300" /></label>
+          <label className="text-sm">Home city<input name="home_city" defaultValue={cfg.home_city} className="mt-1 w-full rounded-md px-2 py-1.5 border border-line" /></label>
+          <label className="text-sm">Home state<input name="home_state" defaultValue={cfg.home_state} className="mt-1 w-full rounded-md px-2 py-1.5 border border-line" /></label>
         </div>
         <label className="block text-sm">Places that count as the home city (comma separated)
-          <input name="home_city_aliases" defaultValue={cfg.home_city_aliases.join(", ")} className="mt-1 w-full rounded-md px-2 py-1.5 ring-1 ring-stone-300" />
+          <input name="home_city_aliases" defaultValue={cfg.home_city_aliases.join(", ")} className="mt-1 w-full rounded-md px-2 py-1.5 border border-line" />
         </label>
       </Fieldset>
 
@@ -77,38 +77,38 @@ export function SettingsForm({ cfg, disabled, credits }: { cfg: RadarConfig; dis
       <Fieldset title="Tiers and hot gates">
         <Slider name="hot_min" label="Hot from" value={cfg.tiers.hot_min} max={100} />
         <Slider name="warm_min" label="Warm from" value={cfg.tiers.warm_min} max={100} />
-        <p className="text-xs text-stone-500">A lead is hot only if it passes every gate below.</p>
+        <p className="text-xs text-fg-3">A lead is hot only if it passes every gate below.</p>
         {GATES.map((g) => (
           <label key={g.key} className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="gates" value={g.key} defaultChecked={cfg.gates.enabled.includes(g.key as never)} className="accent-stone-700" />{g.label}
+            <input type="checkbox" name="gates" value={g.key} defaultChecked={cfg.gates.enabled.includes(g.key as never)} className="accent-current" />{g.label}
           </label>
         ))}
         <Slider name="too_old_days" label="Age limit (days)" value={cfg.gates.too_old_days} max={60} />
       </Fieldset>
 
       <Fieldset title="Drafts and contacts">
-        <label className="block text-sm">NGO name<input name="ngo_name" defaultValue={cfg.ngo_name} className="mt-1 w-full rounded-md px-2 py-1.5 ring-1 ring-stone-300" /></label>
+        <label className="block text-sm">NGO name<input name="ngo_name" defaultValue={cfg.ngo_name} className="mt-1 w-full rounded-md px-2 py-1.5 border border-line" /></label>
         <label className="block text-sm">One real programme outcome to cite in emails
-          <input name="ngo_outcome" defaultValue={cfg.ngo_outcome} placeholder="e.g. 7 of 10 learners in last year's batch were placed within 3 months" className="mt-1 w-full rounded-md px-2 py-1.5 ring-1 ring-stone-300" />
-          <span className="text-xs text-stone-500">Left empty, drafts show a placeholder. Gemini is told never to invent numbers.</span>
+          <input name="ngo_outcome" defaultValue={cfg.ngo_outcome} placeholder="e.g. 7 of 10 learners in last year's batch were placed within 3 months" className="mt-1 w-full rounded-md px-2 py-1.5 border border-line" />
+          <span className="text-xs text-fg-3">Left empty, drafts show a placeholder. Gemini is told never to invent numbers.</span>
         </label>
         <div className="flex flex-wrap gap-3 text-sm">
-          <span className="text-stone-700">Find contacts in Lusha automatically for:</span>
+          <span className="text-fg-2">Find contacts in Lusha automatically for:</span>
           {(["hot", "warm", "cold"] as const).map((t) => (
             <label key={t} className="inline-flex items-center gap-1.5 capitalize">
-              <input type="checkbox" name="lusha_auto_tiers" value={t} defaultChecked={cfg.lusha_auto_tiers.includes(t)} className="accent-stone-700" />{t}
+              <input type="checkbox" name="lusha_auto_tiers" value={t} defaultChecked={cfg.lusha_auto_tiers.includes(t)} className="accent-current" />{t}
             </label>
           ))}
         </div>
         <Slider name="lusha_monthly_cap" label="Lusha credits a month" value={cfg.lusha_monthly_cap} max={100} />
-        <p className="text-xs text-stone-500">{credits} Lusha credits used this month. Email reveal 1 credit, phone 5 (phones are never revealed automatically).</p>
+        <p className="text-xs text-fg-3">{credits} Lusha credits used this month. Email reveal 1 credit, phone 5 (phones are never revealed automatically).</p>
       </Fieldset>
 
       <div className="flex flex-wrap items-start gap-3">
-        <button disabled={disabled || pending} className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">{pending ? "Saving…" : "Save settings"}</button>
+        <button disabled={disabled || pending} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg disabled:opacity-50">{pending ? "Saving…" : "Save settings"}</button>
         <ActionButton action={rescoreAction} label="Rescore all leads" pendingLabel="Rescoring…" disabled={disabled} />
       </div>
-      {state && <p role="status" className={`text-sm ${state.ok ? "text-stone-800" : "text-red-700"}`}>{state.message}</p>}
+      {state && <p role="status" className={`text-sm ${state.ok ? "text-fg" : "text-hot"}`}>{state.message}</p>}
     </form>
   );
 }

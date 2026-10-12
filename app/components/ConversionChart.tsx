@@ -6,11 +6,11 @@ import { useMemo, useState } from "react";
 // dark = won) rather than unrelated hues. Five series: a legend, no per-point numbers,
 // a crosshair tooltip, and a table view for exact values.
 const STAGES = [
-  { key: "new", label: "Found", color: "#86b6ef" },
-  { key: "contacted", label: "Contacted", color: "#5598e7" },
-  { key: "meeting", label: "Meeting", color: "#2a78d6" },
-  { key: "proposal", label: "Proposal", color: "#1c5cab" },
-  { key: "won", label: "Won", color: "#0d366b" },
+  { key: "new", label: "Found", color: "var(--chart-1)" },
+  { key: "contacted", label: "Contacted", color: "var(--chart-2)" },
+  { key: "meeting", label: "Meeting", color: "var(--chart-3)" },
+  { key: "proposal", label: "Proposal", color: "var(--chart-4)" },
+  { key: "won", label: "Won", color: "var(--chart-5)" },
 ] as const;
 
 type Key = (typeof STAGES)[number]["key"];
@@ -45,7 +45,7 @@ export function ConversionChart({ data, compact = false, measuredAfter = 50 }: {
   return (
     <figure className="w-full">
       {!compact && (
-        <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-600" aria-label="Legend">
+        <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-3" aria-label="Legend">
           {STAGES.map((s) => (
             <li key={s.key} className="inline-flex items-center gap-1.5">
               <span className="inline-block h-0.5 w-4 rounded" style={{ background: s.color }} />{s.label}
@@ -69,12 +69,12 @@ export function ConversionChart({ data, compact = false, measuredAfter = 50 }: {
         >
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="#e7e5e4" strokeWidth={1} />
-              <text x={pad.l - 6} y={y(t) + 3} textAnchor="end" className="fill-stone-400" fontSize={10}>{t}</text>
+              <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="var(--line)" strokeWidth={1} />
+              <text x={pad.l - 6} y={y(t) + 3} textAnchor="end" fill="var(--fg-3)" fontSize={10}>{t}</text>
             </g>
           ))}
           {!compact && data.weekStarts.map((w, i) => (i % 2 === (n - 1) % 2 ? (
-            <text key={w} x={x(i)} y={H - 8} textAnchor={i === n - 1 ? "end" : i === 0 ? "start" : "middle"} className="fill-stone-400" fontSize={10}>{short(w)}</text>
+            <text key={w} x={x(i)} y={H - 8} textAnchor={i === n - 1 ? "end" : i === 0 ? "start" : "middle"} fill="var(--fg-3)" fontSize={10}>{short(w)}</text>
           ) : null))}
           {STAGES.map((s) => (
             <polyline
@@ -89,48 +89,48 @@ export function ConversionChart({ data, compact = false, measuredAfter = 50 }: {
           ))}
           {hover != null && (
             <g>
-              <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} stroke="#a8a29e" strokeWidth={1} strokeDasharray="3 3" />
+              <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} stroke="var(--fg-3)" strokeWidth={1} strokeDasharray="3 3" />
               {STAGES.map((s) => (
-                <circle key={s.key} cx={x(hover)} cy={y(data.series[s.key][hover])} r={4} fill={s.color} stroke="#fafaf9" strokeWidth={2} />
+                <circle key={s.key} cx={x(hover)} cy={y(data.series[s.key][hover])} r={4} fill={s.color} stroke="var(--surface)" strokeWidth={2} />
               ))}
             </g>
           )}
         </svg>
         {hover != null && (
           <div
-            className="pointer-events-none absolute top-0 rounded-md bg-white px-2.5 py-2 text-xs shadow-md ring-1 ring-stone-200"
+            className="pointer-events-none absolute top-0 rounded-md border border-line bg-surface px-2.5 py-2 text-xs shadow-lg"
             style={{ left: `${Math.min(70, Math.max(0, (x(hover) / W) * 100 - 10))}%` }}
           >
-            <div className="mb-1 font-medium text-stone-800">Week of {short(data.weekStarts[hover])}</div>
+            <div className="mb-1 font-medium text-fg">Week of {short(data.weekStarts[hover])}</div>
             {STAGES.map((s) => (
-              <div key={s.key} className="flex items-center justify-between gap-4 text-stone-600">
+              <div key={s.key} className="flex items-center justify-between gap-4 text-fg-3">
                 <span className="inline-flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full" style={{ background: s.color }} />{s.label}</span>
-                <span className="tabular-nums text-stone-900">{data.series[s.key][hover]}</span>
+                <span className="tabular-nums text-fg">{data.series[s.key][hover]}</span>
               </div>
             ))}
           </div>
         )}
       </div>
-      <figcaption className="mt-2 space-y-1 text-xs text-stone-600">
+      <figcaption className="mt-2 space-y-1 text-xs text-fg-3">
         <p>
-          Found to contacted: <strong className="text-stone-900">{data.totals.contacted} of {data.totals.found}</strong> ({pct(data.totals.contacted, data.totals.found)})
-          {" · "}to meeting: <strong className="text-stone-900">{data.totals.meeting}</strong>
-          {" · "}won: <strong className="text-stone-900">{data.totals.won}</strong>
+          Found to contacted: <strong className="text-fg">{data.totals.contacted} of {data.totals.found}</strong> ({pct(data.totals.contacted, data.totals.found)})
+          {" · "}to meeting: <strong className="text-fg">{data.totals.meeting}</strong>
+          {" · "}won: <strong className="text-fg">{data.totals.won}</strong>
         </p>
         <p>
-          Win rate: <strong className="text-stone-900">estimate {data.totals.avgEstimate.toFixed(1)}%</strong>, the average formula prior across open leads.
+          Win rate: <strong className="text-fg">estimate {data.totals.avgEstimate.toFixed(1)}%</strong>, the average formula prior across open leads.
           It becomes a measured rate after {measuredAfter} closed outcomes ({closed} recorded so far).
         </p>
       </figcaption>
       {!compact && (
-        <details className="mt-2 text-xs text-stone-600">
+        <details className="mt-2 text-xs text-fg-3">
           <summary className="cursor-pointer">Table view</summary>
           <div className="mt-2 overflow-x-auto">
             <table className="w-full text-left tabular-nums">
               <thead><tr><th className="pr-3 font-medium">Week of</th>{STAGES.map((s) => <th key={s.key} className="pr-3 font-medium">{s.label}</th>)}</tr></thead>
               <tbody>
                 {data.weekStarts.map((w, i) => (
-                  <tr key={w} className="border-t border-stone-100"><td className="pr-3">{short(w)}</td>{STAGES.map((s) => <td key={s.key} className="pr-3">{data.series[s.key][i]}</td>)}</tr>
+                  <tr key={w} className="border-t border-line"><td className="pr-3">{short(w)}</td>{STAGES.map((s) => <td key={s.key} className="pr-3">{data.series[s.key][i]}</td>)}</tr>
                 ))}
               </tbody>
             </table>

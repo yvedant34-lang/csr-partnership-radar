@@ -15,15 +15,15 @@ export function ScoreBars({ lead, cfg }: { lead: Lead; cfg: RadarConfig }) {
     <div className="space-y-1.5">
       {parts.map((p) => (
         <div key={p.label} className="grid grid-cols-[5.5rem_1fr_3rem] items-center gap-2 text-xs">
-          <span className="text-stone-600">{p.label}</span>
-          <span className="h-2 rounded-full bg-stone-100">
-            <span className="block h-2 rounded-full bg-stone-700" style={{ width: `${(p.v / p.max) * 100}%` }} />
+          <span className="text-fg-3">{p.label}</span>
+          <span className="h-2 rounded-full bg-surface-2">
+            <span className="block h-2 rounded-full bg-fg-2" style={{ width: `${(p.v / p.max) * 100}%` }} />
           </span>
-          <span className="text-right tabular-nums text-stone-800">{p.v}/{p.max}</span>
+          <span className="text-right tabular-nums text-fg">{p.v}/{p.max}</span>
         </div>
       ))}
       {penalty > 0 && (
-        <p className="text-xs text-stone-600">Minus {penalty}: {lead.flags.includes("implemented_in_house") ? "runs it in house" : "partner already selected"}.</p>
+        <p className="text-xs text-fg-3">Minus {penalty}: {lead.flags.includes("implemented_in_house") ? "runs it in house" : "partner already selected"}.</p>
       )}
     </div>
   );

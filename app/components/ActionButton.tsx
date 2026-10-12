@@ -5,7 +5,7 @@ import type { ActionResult } from "@/app/actions";
 
 /** Runs a server action and shows its one-line result. */
 export function ActionButton({
-  action, label, pendingLabel, variant = "secondary", disabled, confirm,
+  action, label, pendingLabel, variant = "secondary", disabled, confirm, size = "md",
 }: {
   action: () => Promise<ActionResult>;
   label: string;
@@ -13,13 +13,14 @@ export function ActionButton({
   variant?: "primary" | "secondary" | "quiet";
   disabled?: boolean;
   confirm?: string;
+  size?: "sm" | "md";
 }) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
   const styles = {
-    primary: "bg-stone-900 text-white hover:bg-stone-700",
-    secondary: "bg-white text-stone-800 ring-1 ring-stone-300 hover:bg-stone-50",
-    quiet: "text-stone-600 hover:text-stone-900 underline underline-offset-2",
+    primary: "bg-accent text-accent-fg hover:opacity-90",
+    secondary: "border border-line bg-surface text-fg hover:bg-surface-2",
+    quiet: "text-fg-2 underline underline-offset-2 hover:text-fg",
   }[variant];
   return (
     <span className="inline-flex flex-col gap-1">
@@ -30,13 +31,11 @@ export function ActionButton({
           if (confirm && !window.confirm(confirm)) return;
           start(async () => setResult(await action()));
         }}
-        className={`rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50 ${styles}`}
+        className={`rounded-md font-medium disabled:cursor-not-allowed disabled:opacity-45 ${size === "sm" ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm"} ${styles}`}
       >
         {pending ? pendingLabel ?? "Working…" : label}
       </button>
-      {result && (
-        <span role="status" className={`text-xs ${result.ok ? "text-stone-600" : "text-red-700"}`}>{result.message}</span>
-      )}
+      {result && <span role="status" className={`text-xs ${result.ok ? "text-fg-3" : "text-hot"}`}>{result.message}</span>}
     </span>
   );
 }

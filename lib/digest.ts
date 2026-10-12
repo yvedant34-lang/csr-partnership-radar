@@ -96,7 +96,7 @@ export async function buildDigest(now = new Date()): Promise<DigestPayload> {
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export function renderText(d: DigestPayload): string {
-  const leadLines = (ls: DigestLead[]) => ls.map((l) => `  ${l.company} (${l.tier} ${l.score}): ${l.why}\n    ${l.contact} · estimate ${l.estimate} · ${d.url}/?lead=${l.id}`).join("\n");
+  const leadLines = (ls: DigestLead[]) => ls.map((l) => `  ${l.company} (${l.tier} ${l.score}): ${l.why}\n    ${l.contact} · estimate ${l.estimate} · ${d.url}/leads/${l.id}`).join("\n");
   return [
     d.subject,
     "",
@@ -133,7 +133,7 @@ export function renderHtml(d: DigestPayload): string {
       </div>
       <div style="font-size:14px;color:#292524;line-height:1.45"><strong>${esc(decision(l.tier as "hot"))}</strong> ${esc(l.why)}</div>
       <div style="font-size:12px;color:#78716c;margin-top:6px">${esc(l.contact)} · estimate ${esc(l.estimate)}</div>
-      <a href="${esc(`${d.url}/?lead=${l.id}`)}" style="display:inline-block;margin-top:8px;font-size:13px;color:#1c1917">Open lead</a>
+      <a href="${esc(`${d.url}/leads/${l.id}`)}" style="display:inline-block;margin-top:8px;font-size:13px;color:#1c1917">Open lead</a>
     </div>`;
   const section = (title: string, body: string) => `
     <h2 style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#78716c;margin:22px 0 8px">${esc(title)}</h2>${body}`;
@@ -146,7 +146,7 @@ export function renderHtml(d: DigestPayload): string {
     ${section("Call this week (hot)", d.hot.length ? d.hot.map(card).join("") : muted("None this week. Paste any LinkedIn calls you have seen."))}
     ${section("Warm up (warm)", d.warm.length ? d.warm.map(card).join("") : muted("None this week."))}
     ${section(`Proven funders: pitch for ${d.nextFy}`, d.funders.length
-      ? `<ul style="margin:0;padding-left:18px;font-size:14px;color:#292524;line-height:1.6">${d.funders.map((f) => `<li><a href="${esc(`${d.url}/funders?lead=${f.id}`)}" style="color:#1c1917">${esc(f.company)}</a>, ${esc(f.place)}</li>`).join("")}</ul>`
+      ? `<ul style="margin:0;padding-left:18px;font-size:14px;color:#292524;line-height:1.6">${d.funders.map((f) => `<li><a href="${esc(`${d.url}/leads/${f.id}`)}" style="color:#1c1917">${esc(f.company)}</a>, ${esc(f.place)}</li>`).join("")}</ul>`
       : muted("None yet."))}
     ${section("Policy", d.policy.length
       ? d.policy.map((p) => `<p style="font-size:14px;color:#292524;margin:0 0 8px">${esc(p.title)}<br><span style="color:#57534e">Action: ${esc(p.action ?? "none needed")}</span></p>`).join("")

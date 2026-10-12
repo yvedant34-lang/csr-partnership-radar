@@ -13,7 +13,7 @@ describe("digest", () => {
     expect(renderText(base)).toContain("None this week. Paste any LinkedIn calls you have seen.");
     expect(renderHtml(base)).toContain("No calls this week.");
   });
-  it("links each lead to the radar", () => expect(renderText(base)).toContain("https://radar.example/?lead=x"));
+  it("links each lead to the radar", () => expect(renderText(base)).toContain("https://radar.example/leads/x"));
   it("escapes HTML in lead text", () => {
     const html = renderHtml({ ...base, warm: [{ ...base.warm[0], company: "A <b>B</b>" }] });
     expect(html).toContain("A &lt;b&gt;B&lt;/b&gt;");

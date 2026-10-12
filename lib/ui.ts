@@ -1,10 +1,10 @@
 // Presentation helpers shared by pages. Muted tier colours; red is reserved for hot.
 import type { Tier } from "@/lib/config";
 
-export const TIER_STYLE: Record<Tier, { badge: string; dot: string; label: string; column: string }> = {
-  hot: { badge: "bg-red-50 text-red-800 ring-1 ring-red-200", dot: "bg-red-600", label: "Hot", column: "Call this week" },
-  warm: { badge: "bg-amber-50 text-amber-900 ring-1 ring-amber-200", dot: "bg-amber-500", label: "Warm", column: "Warm up" },
-  cold: { badge: "bg-stone-100 text-stone-600 ring-1 ring-stone-200", dot: "bg-stone-400", label: "Cold", column: "Watch" },
+export const TIER_STYLE: Record<Tier, { badge: string; dot: string; text: string; label: string; column: string }> = {
+  hot: { badge: "bg-hot-bg text-hot", dot: "bg-hot", text: "text-hot", label: "Hot", column: "Call this week" },
+  warm: { badge: "bg-warm-bg text-warm", dot: "bg-warm", text: "text-warm", label: "Warm", column: "Warm up" },
+  cold: { badge: "bg-cold-bg text-cold", dot: "bg-cold", text: "text-cold", label: "Cold", column: "Watch" },
 };
 
 /** The one-line answer every card leads with. */

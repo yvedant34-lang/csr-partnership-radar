@@ -10,10 +10,10 @@ export function LoginForm({ next }: { next: string }) {
       <input type="hidden" name="next" value={next} />
       <label className="block text-sm">
         <span className="font-medium">Passcode</span>
-        <input name="passcode" type="password" autoComplete="current-password" required className="mt-1 w-full rounded-md bg-white px-3 py-2 ring-1 ring-stone-300" />
+        <input name="passcode" type="password" autoComplete="current-password" required className="mt-1 w-full rounded-md bg-surface px-3 py-2 border border-line" />
       </label>
-      <button disabled={pending} className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Unlock</button>
-      {state && !state.ok && <p role="alert" className="text-sm text-red-700">{state.message}</p>}
+      <button disabled={pending} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg disabled:opacity-50">Unlock</button>
+      {state && !state.ok && <p role="alert" className="text-sm text-hot">{state.message}</p>}
     </form>
   );
 }

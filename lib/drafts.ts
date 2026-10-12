@@ -27,7 +27,7 @@ export interface Draft {
   call_opener: string;
 }
 
-const OUTCOME_PLACEHOLDER = "[one outcome from our programme: add it in Settings]";
+const OUTCOME_PLACEHOLDER = "[one measured outcome: add it in Settings]";
 
 export function draftPrompt(lead: Record<string, unknown>, cfg: RadarConfig, contactName: string | null): string {
   const outcome = cfg.ngo_outcome?.trim() || OUTCOME_PLACEHOLDER;
@@ -40,11 +40,12 @@ Place: ${[lead.city, lead.state].filter(Boolean).join(", ") || "not stated"}
 Implementation partner already named: ${lead.implementation_partner ?? "none"}
 Budget: ${lead.budget_inr_cr == null ? "not stated" : `Rs ${lead.budget_inr_cr} Cr`}
 Recipient: ${contactName ?? "the CSR head (name not published)"}
-What our programme delivers (state it plainly; never add numbers, names or results that are not written here): ${outcome}
+What our programme does: ${cfg.ngo_programme || "skills and education for youth, freshers and school dropouts"}
+Our measured outcome (cite it word for word, exactly once; never add other numbers or results): ${outcome}
 
 Write:
 - email_subject: under 9 words, names the exact signal.
-- email_body: under 120 words. Warm, specific, plain English. Open with the exact signal (the centre, the spend, the new role). Then exactly one sentence, based on the programme line above, on how it fits this signal: trained local youth, freshers and dropouts become operators at the company's own sites, so the CSR spend also builds their hiring pipeline. Say this once; do not repeat or paraphrase it a second time, and do not invent results. If a partner is already selected, pitch the next cycle or an adjacent site, not this project. End with one small ask, such as a 20 minute call. No flattery, no generic CSR language, no hype words. Sign off as "Ananya, Head of Corporate Partnerships, ${cfg.ngo_name}".
+- email_body: under 120 words. Warm, specific, plain English. Open with the exact signal (the centre, the spend, the new role). Then one sentence on how the programme fits this signal (trained local youth become operators at the company's own sites, so CSR spend also builds their hiring pipeline), followed by the measured outcome above, quoted exactly. Do not repeat either, and do not invent results. If a partner is already selected, pitch the next cycle or an adjacent site, not this project. End with one small ask, such as a 20 minute call. No flattery, no generic CSR language, no hype words. Sign off as "Ananya, Head of Corporate Partnerships, ${cfg.ngo_name}".
 - linkedin_note: under 280 characters, for a connection request.
 - call_opener: exactly two lines: who we are and why we are calling about this signal; then one question.
 - channel: the best first channel for this company and signal.`;

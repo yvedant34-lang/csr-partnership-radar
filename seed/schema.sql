@@ -180,8 +180,17 @@ create table if not exists tasks (
   call_opener   text,
   outreach_channel text,
   drafted_model text,
+  action_key    text,                                     -- which suggested next action this task records
   is_synthetic  boolean not null default false,
   created_at    timestamptz not null default now()
+);
+
+-- Gemini free-tier caps are per model per day: remember exhausted models across serverless runs.
+create table if not exists gemini_model_status (
+  model       text primary key,
+  down_until  timestamptz not null,
+  reason      text,
+  updated_at  timestamptz not null default now()
 );
 
 create table if not exists digests (
@@ -207,6 +216,7 @@ alter table tasks             enable row level security;
 alter table digests           enable row level security;
 alter table lead_contacts     enable row level security;
 alter table lusha_spend       enable row level security;
+alter table gemini_model_status enable row level security;
 
 do $$
 declare t text;

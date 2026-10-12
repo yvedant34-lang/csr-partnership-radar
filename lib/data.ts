@@ -161,3 +161,44 @@ export async function getConversionSeries(sample: boolean, weeks = 12) {
 }
 
 export { weekStartIst };
+
+/** Contacts and tasks for many leads at once, grouped by lead id (for tables and the action list). */
+export async function getLeadExtras(leadIds: string[]) {
+  const ids = leadIds.length ? leadIds : ["00000000-0000-0000-0000-000000000000"];
+  const [{ data: contacts }, { data: tasks }] = await Promise.all([
+    db().from("lead_contacts").select("id, lead_id, source, match, name, email, linkedin, can_reveal").in("lead_id", ids),
+    db().from("tasks").select("id, lead_id, action_key, kind, status, email_draft, due_date").in("lead_id", ids),
+  ]);
+  const by = <T extends { lead_id: string }>(rows: T[] | null) => {
+    const m = new Map<string, T[]>();
+    for (const r of rows ?? []) m.set(r.lead_id, [...(m.get(r.lead_id) ?? []), r]);
+    return m;
+  };
+  return { contacts: by(contacts as never), tasks: by(tasks as never) } as {
+    contacts: Map<string, { id: string; lead_id: string; source: "source_text" | "lusha"; match: string | null; name: string; email: string | null; linkedin: string | null; can_reveal: string[] }[]>;
+    tasks: Map<string, { id: string; lead_id: string; action_key: string | null; kind: string; status: string; email_draft: string | null; due_date: string | null }[]>;
+  };
+}
+
+export interface ActivityItem { at: string; text: string }
+
+/** Timeline for a lead record: found, stage moves, tasks, contacts found and revealed. */
+export async function getActivity(leadId: string, createdAt: string): Promise<ActivityItem[]> {
+  const [{ data: events }, { data: tasks }, { data: contacts }] = await Promise.all([
+    db().from("lead_stage_events").select("from_stage, to_stage, changed_at").eq("lead_id", leadId),
+    db().from("tasks").select("title, status, created_at, drafted_model, email_draft").eq("lead_id", leadId),
+    db().from("lead_contacts").select("name, source, found_at, revealed_at, email").eq("lead_id", leadId),
+  ]);
+  const items: ActivityItem[] = [];
+  for (const e of events ?? []) items.push({ at: e.changed_at, text: e.from_stage ? `Moved from ${e.from_stage} to ${e.to_stage}` : "Found by the radar" });
+  for (const t of tasks ?? []) {
+    items.push({ at: t.created_at, text: `${t.title}${t.status !== "open" ? ` (${t.status})` : ""}` });
+    if (t.email_draft && t.drafted_model) items.push({ at: t.created_at, text: `Email draft written by ${t.drafted_model}` });
+  }
+  for (const c of contacts ?? []) {
+    if (c.source === "lusha") items.push({ at: c.found_at, text: `Contact found in Lusha: ${c.name}` });
+    if (c.revealed_at && c.email) items.push({ at: c.revealed_at, text: `Email revealed for ${c.name}` });
+  }
+  if (!items.length) items.push({ at: createdAt, text: "Found by the radar" });
+  return items.sort((a, b) => +new Date(b.at) - +new Date(a.at));
+}

@@ -34,7 +34,8 @@ export interface RadarConfig {
   lusha_auto_tiers: Tier[];
   lusha_monthly_cap: number;
   ngo_name: string;
-  ngo_outcome: string; // one real programme outcome used in drafts; empty = placeholder, never invented
+  ngo_programme: string; // what the programme does
+  ngo_outcome: string; // one real, measured outcome cited in drafts; empty = placeholder, never invented
 }
 
 /** Strips the _note/_inferred keys from the JSON file. The DB row (radar_config.config) has the same shape. */
