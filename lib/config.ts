@@ -31,6 +31,10 @@ export interface RadarConfig {
   gates: { enabled: GateName[]; too_old_days: number };
   conversion_prior: { base_pct: number; span_pct: number; measured_after_outcomes: number };
   actions: Record<Tier, string>;
+  lusha_auto_tiers: Tier[];
+  lusha_monthly_cap: number;
+  ngo_name: string;
+  ngo_outcome: string; // one real programme outcome used in drafts; empty = placeholder, never invented
 }
 
 /** Strips the _note/_inferred keys from the JSON file. The DB row (radar_config.config) has the same shape. */

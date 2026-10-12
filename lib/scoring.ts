@@ -186,3 +186,26 @@ export const GATE_WORDS: Record<GateName, string> = {
 export function gateWords(g: GateName, cfg: RadarConfig): string {
   return g === "too_old" ? `Older than ${cfg.gates.too_old_days} days` : GATE_WORDS[g];
 }
+
+export type EstimateConfidence = "high" | "medium" | "low";
+
+/**
+ * How much to trust the conversion estimate for this lead. Not a probability: it reflects the
+ * evidence behind the score (full article vs headline, a named contact, a stated budget or need).
+ */
+export function estimateConfidence(l: {
+  article_read: boolean;
+  poc_name: string | null;
+  budget_inr_cr: number | null;
+  signal_type: string;
+  has_contact_email?: boolean;
+}): { level: EstimateConfidence; reasons: string[] } {
+  const reasons: string[] = [];
+  let points = 0;
+  if (l.article_read) { points += 2; reasons.push("full article read"); } else reasons.push("headline only");
+  if (l.poc_name) { points += 1; reasons.push("named contact"); } else reasons.push("no named contact");
+  if (l.has_contact_email) { points += 1; reasons.push("verified email"); }
+  if (l.budget_inr_cr != null) { points += 1; reasons.push("budget stated"); }
+  if (l.signal_type === "partner_search" || l.signal_type === "csr_tender_or_eoi") { points += 1; reasons.push("open partner search"); }
+  return { level: points >= 4 ? "high" : points >= 2 ? "medium" : "low", reasons };
+}

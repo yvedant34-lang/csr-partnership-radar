@@ -38,6 +38,8 @@ create table if not exists raw_items (
   status           text not null default 'new',           -- new | skipped | extracted | irrelevant | error
   extracted_at     timestamptz,
   extraction       jsonb,
+  source_url       text,
+  article_chars    int,
   error            text
 );
 create index if not exists raw_items_status_idx on raw_items (status, prefilter_pass);
@@ -71,7 +73,14 @@ create table if not exists leads (
   beneficiaries          text,
   summary                text,
   why_now                text,
-  extraction_confidence  text not null default 'high',   -- high (verified / full text) | low (RSS title + snippet)
+  extraction_confidence  text not null default 'high',
+  source_url             text,                            -- publisher URL resolved from the Google link
+  article_read           boolean not null default false,  -- Gemini read the full article, not just the headline
+  outreach_channel       text,                            -- email | linkedin | warm_intro | event | phone
+  outreach_angle         text,
+  outreach_first_line    text,
+  outreach_ask           text,
+  people                 jsonb not null default '[]'::jsonb, -- everyone named in the source, with role   -- high (verified / full text) | low (RSS title + snippet)
   -- score: plain code from radar_config, recomputed daily and on "Rescore all"
   priority_score         int not null default 0,
   probability_of_conversion_pct numeric not null default 0,
@@ -103,6 +112,8 @@ create unique index if not exists leads_company_signal_week_uidx on leads (
   (date_trunc('week', (posted_at at time zone 'Asia/Kolkata')))
 );
 create index if not exists leads_posted_idx on leads (posted_at desc);
+
+-- verified seed leads (LIVE-*) were read from full articles by hand: seed_live.sql sets article_read.
 
 create table if not exists lead_stage_events (
   id          uuid primary key default gen_random_uuid(),
@@ -167,6 +178,8 @@ create table if not exists tasks (
   email_subject text,
   email_draft   text,                                     -- drafted, never sent to a company
   call_opener   text,
+  outreach_channel text,
+  drafted_model text,
   is_synthetic  boolean not null default false,
   created_at    timestamptz not null default now()
 );

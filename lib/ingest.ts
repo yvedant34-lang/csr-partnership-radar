@@ -75,12 +75,13 @@ export async function extractBatch(limit = EXTRACT_BATCH, budgetMs = 240_000) {
       if (Date.now() > deadline - 20_000) break;
       attempted++;
       try {
-        const { outcome, extraction } = await processItem({ ...it, raw_item_id: it.id, source_type: "news" }, cfg, new Date(), deadline);
+        const { outcome, extraction, article } = await processItem({ ...it, raw_item_id: it.id, source_type: "news" }, cfg, new Date(), deadline);
         const key = outcome.kind === "lead" ? (outcome.created ? "lead_created" : "lead_updated") : outcome.kind;
         outcomes[key]++;
         await db().from("raw_items").update({
           status: outcome.kind === "irrelevant" ? "irrelevant" : "extracted",
-          extracted_at: new Date().toISOString(), extraction, error: outcome.kind === "irrelevant" ? outcome.reason : null,
+          extracted_at: new Date().toISOString(), extraction, source_url: article.url, article_chars: article.chars,
+          error: outcome.kind === "irrelevant" ? outcome.reason : article.error ? `article: ${article.error}` : null,
         }).eq("id", it.id);
       } catch (e) {
         const msg = (e as Error).message;

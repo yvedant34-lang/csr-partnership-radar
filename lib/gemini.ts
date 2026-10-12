@@ -36,7 +36,13 @@ Extract facts from the item below into the JSON schema. Rules:
 - implementation_partner: the NGO or agency delivering the work, as named. If the company runs it itself, write "<name> (in house)". If not named, null.
 - budget_inr_cr: the amount in crore rupees if stated (convert lakh: 50 lakh = 0.5). Else null.
 - summary: two plain sentences, facts only, Indian formats (Rs, crore, lakh).
-- why_now: one plain sentence for the NGO's partnerships head: is there a reason to contact this company now, and why. No hype.`;
+- why_now: one plain sentence for the NGO's partnerships head: is there a reason to contact this company now, and why. If the article shows no opening (partner chosen, outside Maharashtra, one-off event), say so plainly. No hype.
+- people: everyone the text names who speaks for, leads, or decides for the company or its CSR (name exactly as written, their designation, and role: spokesperson | csr_head | committee | executive | partner_org). Never invent a person.
+- outreach: a specific cold outreach plan for this company, tied to the exact signal in the text (the centre, the spend, the new role, the stated need):
+  channel = the best first channel (email | linkedin | warm_intro | event | phone);
+  angle = one sentence on what the NGO offers that fits this signal (school dropouts and first generation job seekers in Pune);
+  first_line = the opening line of the first message, referencing the signal concretely, under 30 words, no flattery;
+  ask = one small ask (for example a 20 minute call).`;
 
 export const GEMINI_SCHEMA = {
   type: "OBJECT",
@@ -60,12 +66,35 @@ export const GEMINI_SCHEMA = {
     why_now: { type: "STRING" },
     policy_impact: { type: "STRING", nullable: true },
     policy_action: { type: "STRING", nullable: true },
+    people: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          name: { type: "STRING" },
+          designation: { type: "STRING", nullable: true },
+          role: { type: "STRING", enum: ["spokesperson", "csr_head", "committee", "executive", "partner_org"] },
+        },
+        required: ["name", "role"],
+      },
+    },
+    outreach: {
+      type: "OBJECT",
+      nullable: true,
+      properties: {
+        channel: { type: "STRING", enum: ["email", "linkedin", "warm_intro", "event", "phone"] },
+        angle: { type: "STRING" },
+        first_line: { type: "STRING" },
+        ask: { type: "STRING" },
+      },
+      required: ["channel", "angle", "first_line", "ask"],
+    },
   },
-  required: ["relevant", "is_policy", "summary", "why_now", "programme_states"],
+  required: ["relevant", "is_policy", "summary", "why_now", "programme_states", "people"],
   propertyOrdering: [
     "relevant", "is_policy", "company_name", "industry", "csr_focus_area", "signal_type", "city", "state",
     "geo_scope", "programme_states", "poc_name", "poc_designation", "implementation_partner", "budget_inr_cr",
-    "beneficiaries", "summary", "why_now", "policy_impact", "policy_action",
+    "beneficiaries", "summary", "why_now", "policy_impact", "policy_action", "people", "outreach",
   ],
 } as const;
 
@@ -89,6 +118,8 @@ export interface Extraction {
   why_now: string;
   policy_impact: string | null;
   policy_action: string | null;
+  people: { name: string; designation: string | null; role: string }[];
+  outreach: { channel: string; angle: string; first_line: string; ask: string } | null;
 }
 
 export class GeminiError extends Error {

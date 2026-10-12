@@ -66,6 +66,8 @@ insert into leads (${cols.join(", ")}, programme_states, extraction_confidence, 
 ${values.join(",\n")}
 on conflict (lead_id) do nothing;
 
+update leads set article_read = true where lead_id like 'LIVE-%';
+
 -- Every lead starts in "new": one stage event at the time it was found.
 insert into lead_stage_events (lead_id, from_stage, to_stage, changed_at)
 select l.id, null, 'new', l.verified_at::timestamptz + interval '9 hours'
