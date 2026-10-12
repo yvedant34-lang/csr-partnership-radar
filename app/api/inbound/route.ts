@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 //
 // Replies to the first email (for example a Gmail filter forwarding to Zapier):
 //   { "kind": "reply", "from": "name@company.com", "text": "Yes, 3 pm works", "lead_id": "<optional>" }
-// A clear yes books the proposed 3 pm slot on Calendly; anything else waits for Ananya.
+// A clear yes books the proposed 3 pm slot in Google Calendar; anything else waits for Ananya.
 function authorised(req: Request) {
   const secret = process.env.INBOUND_SECRET || process.env.CRON_SECRET;
   const got = req.headers.get("authorization") ?? "";

@@ -15,7 +15,7 @@ type Task = Awaited<ReturnType<typeof getTasks>>[number];
 
 export default async function Tasks() {
   const [all, admin, sample, cfg] = await Promise.all([getTasks(), isAdmin(), showSample(), getConfig()]);
-  const meetingPrefs = { hour: cfg.meeting_hour_ist, minutes: cfg.meeting_minutes, skipWeekends: cfg.meeting_skip_weekends, schedulingUrl: cfg.calendly_scheduling_url || null };
+  const meetingPrefs = { hour: cfg.meeting_hour_ist, minutes: cfg.meeting_minutes, skipWeekends: cfg.meeting_skip_weekends, schedulingUrl: cfg.booking_page_url || null };
   const tasks = all.filter((t: Task) => sample || !t.leads?.is_synthetic);
   const open = tasks.filter((t: Task) => t.status === "open");
   const closed = tasks.filter((t: Task) => t.status !== "open");

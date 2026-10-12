@@ -207,7 +207,7 @@ create table if not exists notifications (
 );
 create index if not exists notifications_unread_idx on notifications (read_at, created_at desc);
 
--- Meeting proposals and Calendly bookings. The first email proposes a slot; a reply decides what happens.
+-- Meeting proposals and Google Calendar bookings. The first email proposes a slot; a reply decides what happens.
 create table if not exists meetings (
   id               uuid primary key default gen_random_uuid(),
   lead_id          uuid not null references leads(id) on delete cascade,
@@ -220,15 +220,23 @@ create table if not exists meetings (
   reply_text       text,
   reply_intent     text,
   reply_confidence numeric,
-  calendly_invitee_uri text,
-  calendly_event_uri   text,
-  reschedule_url   text,
-  cancel_url       text,
+  google_event_id  text,
+  event_link       text,                    -- the event in Ananya's Google Calendar
+  meet_link        text,                    -- Google Meet link, if created
   error            text,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
 create index if not exists meetings_lead_idx on meetings (lead_id, created_at desc);
+
+-- Connected accounts (Google Calendar). Refresh tokens are read only by server code (no RLS policy).
+create table if not exists integrations (
+  provider      text primary key,
+  account_email text,
+  refresh_token text not null,
+  scope         text,
+  connected_at  timestamptz not null default now()
+);
 
 create table if not exists digests (
   id           uuid primary key default gen_random_uuid(),
@@ -256,6 +264,7 @@ alter table lusha_spend       enable row level security;
 alter table gemini_model_status enable row level security;
 alter table notifications     enable row level security;
 alter table meetings          enable row level security;
+alter table integrations      enable row level security;
 
 do $$
 declare t text;

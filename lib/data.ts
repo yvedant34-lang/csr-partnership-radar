@@ -235,7 +235,7 @@ export async function unreadNotificationCount() {
 export interface Meeting {
   id: string; status: string; proposed_start: string | null; start_time: string | null; invitee_name: string | null;
   invitee_email: string | null; reply_text: string | null; reply_intent: string | null; reply_confidence: number | null;
-  reschedule_url: string | null; cancel_url: string | null; error: string | null; created_at: string;
+  event_link: string | null; meet_link: string | null; error: string | null; created_at: string;
 }
 
 export async function getMeetings(leadId: string): Promise<Meeting[]> {

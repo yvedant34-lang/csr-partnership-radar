@@ -141,7 +141,7 @@ export function nextActions(
   }
 
   if (stage === "contacted") {
-    out.push({ key: "follow_up", title: `Follow up with ${who} if there is no reply in 5 days`, why: `Paste their reply on this page: a yes books the meeting on Calendly. Still silent after one follow up, mark Ghosted. (${metric})`, due: ymd(addDays(now, 5)), cta: null, rank: 20 });
+    out.push({ key: "follow_up", title: `Follow up with ${who} if there is no reply in 5 days`, why: `Paste their reply on this page: a yes books the meeting in Google Calendar. Still silent after one follow up, mark Ghosted. (${metric})`, due: ymd(addDays(now, 5)), cta: null, rank: 20 });
   }
   if (stage === "meeting") {
     out.push({ key: "proposal", title: "Send a one page proposal after the meeting", why: `Lead with the outcome: ${cfg.ngo_outcome || "add it in Settings"}`, due: ymd(addDays(now, 3)), cta: null, rank: 20 });

@@ -127,7 +127,6 @@
   "meeting_hour_ist": 15,
   "meeting_minutes": 20,
   "meeting_skip_weekends": false,
-  "calendly_event_type_uri": "",
-  "calendly_scheduling_url": "",
-  "auto_book_min_confidence": 0.8
+  "auto_book_min_confidence": 0.8,
+  "booking_page_url": ""
 }

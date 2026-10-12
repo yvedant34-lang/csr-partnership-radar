@@ -6,10 +6,10 @@ import { revalidatePath } from "next/cache";
 import { normaliseConfig, type GateName, type RadarConfig } from "@/lib/config";
 import { STAGES, type Stage } from "@/lib/data";
 import { draftOutreach, saveDraftTask } from "@/lib/drafts";
-import { eventTypes } from "@/lib/calendly";
 import { intake } from "@/lib/intake";
 import { formatSlot, nextDaySlot } from "@/lib/meeting";
-import { bookSlot, handleReply } from "@/lib/replies";
+import { bookSlot, handleReply, recordBooked } from "@/lib/replies";
+import { connection, disconnect } from "@/lib/gcal";
 import { findContacts, revealEmail } from "@/lib/lusha";
 import { loadConfig, rescoreAll } from "@/lib/pipeline";
 import { isAdmin, login, logout, requireAdmin } from "@/lib/session";
@@ -155,7 +155,7 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
   } catch (e) { return fail(e); }
 }
 
-/** Ananya pastes the lead's reply: read it, and book on Calendly if it is a clear yes. */
+/** Ananya pastes the lead's reply: read it, and book in Google Calendar if it is a clear yes. */
 export async function logReply(leadId: string, _: ActionResult | null, form: FormData): Promise<ActionResult> {
   try {
     await requireAdmin();
@@ -177,12 +177,34 @@ export async function bookMeeting(meetingId: string): Promise<ActionResult> {
     const start = m.start_time ?? m.proposed_start;
     if (!start) return { ok: false, message: "No time to book. Paste a reply with a time." };
     if (!m.invitee_email) return { ok: false, message: "No email address for the invite. Find or reveal the contact first." };
+    if (!(await connection())) return { ok: false, message: "Google Calendar is not connected. Use Add to Google Calendar, then I added it." };
     const cfg = await loadConfig();
     const r = await bookSlot(m.lead_id, new Date(start), {
       name: m.invitee_name ?? "Guest", email: m.invitee_email, cfg,
       save: async (fields) => { await db().from("meetings").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", meetingId); return meetingId; },
     });
     return r.status === "booked" ? done(r.message) : { ok: false, message: r.message };
+  } catch (e) { return fail(e); }
+}
+
+/** Ananya added the meeting with the one-click Google Calendar link: record it as booked. */
+export async function confirmCalendarAdded(meetingId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const { data: m } = await db().from("meetings").select("*").eq("id", meetingId).single();
+    if (!m) return { ok: false, message: "Meeting not found." };
+    const start = new Date(m.start_time ?? m.proposed_start);
+    await db().from("meetings").update({ status: "booked", start_time: start.toISOString(), error: null, updated_at: new Date().toISOString() }).eq("id", meetingId);
+    await recordBooked(m.lead_id, start, m.invitee_name ?? "the contact", "from Google Calendar");
+    return done(`Recorded: meeting ${formatSlot(start)}.`);
+  } catch (e) { return fail(e); }
+}
+
+export async function disconnectGoogle(): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await disconnect();
+    return done("Google Calendar disconnected.");
   } catch (e) { return fail(e); }
 }
 
@@ -246,15 +268,8 @@ export async function saveSettings(_: ActionResult | null, form: FormData): Prom
       meeting_minutes: numberField(form, "meeting_minutes", cur.meeting_minutes),
       meeting_skip_weekends: form.get("meeting_skip_weekends") === "on",
       auto_book_min_confidence: numberField(form, "auto_book_pct", Math.round(cur.auto_book_min_confidence * 100)) / 100,
-      calendly_event_type_uri: form.has("calendly_event_type_uri") ? String(form.get("calendly_event_type_uri") ?? "") : cur.calendly_event_type_uri,
+      booking_page_url: String(form.get("booking_page_url") ?? cur.booking_page_url ?? "").trim(),
     });
-    // The public booking link offered as the fallback in the first email comes from the chosen event type.
-    if (next.calendly_event_type_uri && next.calendly_event_type_uri !== cur.calendly_scheduling_url) {
-      try {
-        const t = (await eventTypes()).find((e) => e.uri === next.calendly_event_type_uri);
-        if (t) next.calendly_scheduling_url = t.scheduling_url;
-      } catch { /* keep the previous link */ }
-    }
     if (next.tiers.warm_min >= next.tiers.hot_min) return { ok: false, message: "The warm threshold must be below the hot threshold." };
     await db().from("radar_config").update({ config: next, updated_at: new Date().toISOString() }).eq("id", 1);
     return done("Settings saved. Use Rescore all leads to apply them to existing leads.");

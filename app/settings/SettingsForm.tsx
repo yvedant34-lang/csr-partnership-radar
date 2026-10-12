@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { rescoreAction, saveSettings } from "@/app/actions";
+import { disconnectGoogle, rescoreAction, saveSettings } from "@/app/actions";
 import { ActionButton } from "@/app/components/ActionButton";
 import type { RadarConfig } from "@/lib/config";
 
@@ -37,9 +37,9 @@ function Fieldset({ title, children }: { title: string; children: React.ReactNod
   );
 }
 
-export interface CalendlyState { connected: boolean; user?: string; error?: string; types: { uri: string; name: string; duration: number; url: string }[] }
+export interface GoogleState { configured: boolean; connected: boolean; account: string | null; redirect: string }
 
-export function SettingsForm({ cfg, disabled, credits, calendly }: { cfg: RadarConfig; disabled: boolean; credits: number; calendly: CalendlyState }) {
+export function SettingsForm({ cfg, disabled, credits, google }: { cfg: RadarConfig; disabled: boolean; credits: number; google: GoogleState }) {
   const [state, action, pending] = useActionState(saveSettings, null);
   return (
     <form action={action} className="space-y-4">
@@ -88,18 +88,35 @@ export function SettingsForm({ cfg, disabled, credits, calendly }: { cfg: RadarC
         <Slider name="too_old_days" label="Age limit (days)" value={cfg.gates.too_old_days} max={60} />
       </Fieldset>
 
-      <Fieldset title="Meetings and Calendly">
-        <p className="text-sm">
-          {calendly.connected
-            ? <span className="text-good">Connected as {calendly.user}.</span>
-            : <span className="text-warm">{calendly.error ?? "Not connected: add CALENDLY_API_KEY (a personal access token from calendly.com/integrations/api_webhooks)."}</span>}
-        </p>
-        <label className="block text-sm">Event type to book
-          <select name="calendly_event_type_uri" defaultValue={cfg.calendly_event_type_uri} disabled={!calendly.connected}
-            className="mt-1 w-full rounded-full border border-line bg-surface-2 px-3 py-1.5 disabled:opacity-50">
-            <option value="">Choose one</option>
-            {calendly.types.map((t) => <option key={t.uri} value={t.uri}>{t.name} · {t.duration} min</option>)}
-          </select>
+      <Fieldset title="Meetings and Google Calendar">
+        <div className="space-y-1 text-sm">
+          {google.connected ? (
+            <p className="flex flex-wrap items-center gap-3">
+              <span className="text-good">Connected as {google.account ?? "your Google account"}. A clear yes is booked automatically, with a Meet link.</span>
+              <ActionButton size="sm" variant="quiet" action={disconnectGoogle} label="Disconnect" disabled={disabled} />
+            </p>
+          ) : (
+            <>
+              <p className="text-fg-2">Free and already working: when a lead says yes, the lead page shows <strong>Add to Google Calendar</strong> with the time and guest filled in. You click Save and Google sends the invite.</p>
+              {google.configured ? (
+                <a href="/api/google/connect" className={`inline-block rounded-full bg-accent px-4 py-1.5 text-xs font-medium text-accent-fg ${disabled ? "pointer-events-none opacity-40" : ""}`}>Connect Google Calendar for automatic booking</a>
+              ) : (
+                <details className="text-xs text-fg-3">
+                  <summary className="cursor-pointer">Optional: book automatically (free, about 5 minutes once)</summary>
+                  <ol className="mt-2 list-decimal space-y-1 pl-4">
+                    <li>console.cloud.google.com: create a project, enable the Google Calendar API.</li>
+                    <li>OAuth consent screen: External, add your email; set publishing status to In production so the link does not expire after 7 days.</li>
+                    <li>Credentials: create an OAuth client ID (Web application) with redirect URI <code className="break-all">{google.redirect}</code>.</li>
+                    <li>Put GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.local and on Vercel, redeploy, then press Connect here.</li>
+                  </ol>
+                </details>
+              )}
+            </>
+          )}
+        </div>
+        <label className="block text-sm">Booking page link offered in the first email (optional)
+          <input name="booking_page_url" type="url" defaultValue={cfg.booking_page_url} placeholder="A Google Calendar appointment schedule link, free"
+            className="mt-1 w-full rounded-full border border-line bg-surface-2 px-3 py-1.5" />
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm">First email proposes (IST, next day)
@@ -116,7 +133,7 @@ export function SettingsForm({ cfg, disabled, credits, calendly }: { cfg: RadarC
           If the next day is a Saturday or Sunday, propose Monday instead
         </label>
         <Slider name="auto_book_pct" label="Book without a click when Gemini is at least (%) sure" value={Math.round(cfg.auto_book_min_confidence * 100)} max={100} />
-        <p className="text-xs text-fg-3">A clear yes to the proposed time, or a clear new time, books on Calendly and Calendly sends the invite. Anything less certain lands in your inbox with a one-click Book button.</p>
+        <p className="text-xs text-fg-3">A clear yes to the proposed time, or a clear new time, is booked in your Google Calendar (when connected) and Google sends the invite. Otherwise it lands in your inbox with Add to Google Calendar.</p>
       </Fieldset>
 
       <Fieldset title="Drafts and contacts">

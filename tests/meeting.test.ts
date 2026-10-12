@@ -14,10 +14,10 @@ describe("meeting slot", () => {
     expect(formatSlot(nextDaySlot(new Date("2026-10-16T10:00:00+05:30"), 15, true))).toBe("Monday 19 Oct at 3 pm IST");
     expect(formatSlot(nextDaySlot(new Date("2026-10-16T10:00:00+05:30"), 15, false))).toBe("Saturday 17 Oct at 3 pm IST");
   });
-  it("asks for tomorrow with the Calendly fallback", () => {
+  it("asks for tomorrow with the booking page fallback", () => {
     const from = new Date("2026-10-12T22:30:00+05:30");
-    expect(meetingAsk(nextDaySlot(from), { from, schedulingUrl: "https://calendly.com/x/20min" }))
-      .toBe("Could we speak for 20 minutes tomorrow, Tuesday 13 Oct at 3 pm IST? If another time suits you better, please pick one here: https://calendly.com/x/20min");
+    expect(meetingAsk(nextDaySlot(from), { from, schedulingUrl: "https://calendar.app.google/abc123" }))
+      .toBe("Could we speak for 20 minutes tomorrow, Tuesday 13 Oct at 3 pm IST? If another time suits you better, please pick one here: https://calendar.app.google/abc123");
   });
   it("replaces the marker, or replaces the old ask before the sign-off", () => {
     expect(withMeetingAsk("Hi.\n\n[[MEETING_ASK]]\n\nAnanya", "ASK")).toBe("Hi.\n\nASK\n\nAnanya");

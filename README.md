@@ -47,13 +47,16 @@ Every new signal lands in the **New signals** inbox at the top of the dashboard,
 
 Each lead page also shows its **life cycle** as a step line from Ghosted (lowest) to Invoice signed (highest).
 
-## Meetings (Calendly)
+## Meetings (Google Calendar, free)
 
-The first email always proposes a 20 minute call at **3 pm IST the next day** (set in Settings). The time is filled in when Ananya opens the draft in Gmail or Outlook, so "tomorrow" is always right, and the email offers the Calendly link as a fallback. When the lead replies, paste the reply on the lead page or forward it to `POST /api/inbound` with `{"kind": "reply", "from": "...", "text": "..."}`. Gemini reads it; a clear yes (or a clear new time) is booked on Calendly automatically and the lead moves to Meeting. Anything less certain waits for one click. Booking through the API needs `CALENDLY_API_KEY` and a Calendly Standard plan or above; choose the event type in Settings.
+The first email always proposes a 20 minute call at **3 pm IST the next day** (set in Settings). The time is filled in when Ananya opens the draft in Gmail or Outlook, so "tomorrow" is always right; an optional Google Calendar booking page link is offered as a fallback. When the lead replies, paste the reply on the lead page or forward it to `POST /api/inbound` with `{"kind": "reply", "from": "...", "text": "..."}`. Gemini reads it.
+
+- **No setup:** a yes shows **Add to Google Calendar** with the time, agenda and guest filled in. Ananya clicks Save, Google emails the invite, and **I added it** moves the lead to Meeting.
+- **Automatic (free, optional):** add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from a Google Cloud OAuth client (redirect `<APP_URL>/api/google/callback`, consent screen published) and press Connect in Settings. A clear yes is then booked directly: free/busy is checked, a Meet link is added and Google sends the invite.
 
 ## Environment variables
 
-`GEMINI_API_KEY`, `GEMINI_MODEL` (optional first choice), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server only), `RESEND_API_KEY`, `DIGEST_TO_EMAIL`, `DIGEST_FROM_EMAIL` (optional, needs a verified Resend domain), `CRON_SECRET`, `ADMIN_PASSCODE`, `LUSHA_API_KEY` (optional), `APP_URL`, `INBOUND_SECRET` (for the live feed), `CALENDLY_API_KEY` (meetings).
+`GEMINI_API_KEY`, `GEMINI_MODEL` (optional first choice), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server only), `RESEND_API_KEY`, `DIGEST_TO_EMAIL`, `DIGEST_FROM_EMAIL` (optional, needs a verified Resend domain), `CRON_SECRET`, `ADMIN_PASSCODE`, `LUSHA_API_KEY` (optional), `APP_URL`, `INBOUND_SECRET` (for the live feed), `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (optional, automatic meeting booking).
 
 ## Scripts
 

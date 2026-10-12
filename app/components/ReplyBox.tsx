@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { logReply } from "@/app/actions";
 
-/** Paste the lead's reply. A clear yes (or a clear new time) books on Calendly; anything else waits for you. */
+/** Paste the lead's reply. A clear yes (or a clear new time) is booked in Google Calendar (or one click away); anything else waits for you. */
 export function ReplyBox({ leadId, admin }: { leadId: string; admin: boolean }) {
   const [state, action, pending] = useActionState(logReply.bind(null, leadId), null);
   return (

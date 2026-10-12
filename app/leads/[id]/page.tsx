@@ -12,7 +12,9 @@ import { StageSelect } from "@/app/components/StageSelect";
 import { LifecycleChart } from "@/app/components/LifecycleChart";
 import { getActivity, getConfig, getContacts, getLead, getMeetings, getStageEvents, getTasks } from "@/lib/data";
 import { ReplyBox } from "@/app/components/ReplyBox";
-import { bookMeeting } from "@/app/actions";
+import { bookMeeting, confirmCalendarAdded } from "@/app/actions";
+import { googleCalendarLink, meetingTitle } from "@/lib/calendar-link";
+import { connection as googleConnection } from "@/lib/gcal";
 import { formatSlot } from "@/lib/meeting";
 import { formatDate, formatDateTimeIst, formatInr } from "@/lib/format";
 import { nextActions } from "@/lib/next-actions";
@@ -45,6 +47,14 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
   const [cfg, contacts, tasks, admin] = await Promise.all([getConfig(), getContacts(id), getTasks(id), isAdmin()]);
   const [activity, stageEvents, meetings] = await Promise.all([getActivity(id, lead.posted_at), getStageEvents(id), getMeetings(id)]);
   const meeting = meetings[0] ?? null;
+  const google = await googleConnection();
+  const slotFor = (m: typeof meeting) => (m ? m.start_time ?? m.proposed_start : null);
+  const calendarLink = meeting && slotFor(meeting) ? googleCalendarLink({
+    title: meetingTitle(lead.company_name, cfg.ngo_name),
+    start: new Date(slotFor(meeting)!), minutes: cfg.meeting_minutes,
+    details: [`CSR partnership call with ${meeting.invitee_name ?? lead.poc_name ?? "the CSR team"} (${lead.company_name}).`, lead.why_now ?? "", cfg.ngo_outcome ? `Our outcome: ${cfg.ngo_outcome}` : ""].filter(Boolean).join("\n\n"),
+    guests: [admin ? meeting.invitee_email : null],
+  }) : null;
   const INTENT: Record<string, string> = { accept_proposed: "said yes to the proposed time", propose_other_time: "suggested another time", decline: "said no", unclear: "reply was unclear" };
   const actions = nextActions(lead, contacts, tasks, cfg);
   const conf = estimateConfidence({ ...lead, has_contact_email: contacts.some((c) => c.email) });
@@ -55,7 +65,7 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
   const locked = !admin;
   const sourceUrl = lead.source_url ?? lead.post_link;
   // Who the draft goes to: a verified email (Lusha) first; the article's contact otherwise has no address.
-  const meetingPrefs = { hour: cfg.meeting_hour_ist, minutes: cfg.meeting_minutes, skipWeekends: cfg.meeting_skip_weekends, schedulingUrl: cfg.calendly_scheduling_url || null };
+  const meetingPrefs = { hour: cfg.meeting_hour_ist, minutes: cfg.meeting_minutes, skipWeekends: cfg.meeting_skip_weekends, schedulingUrl: cfg.booking_page_url || null };
   const emailContact = contacts.find((c) => c.email && c.match !== "adjacent_role") ?? contacts.find((c) => c.email) ?? null;
 
   return (
@@ -128,7 +138,7 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
           <Card title="Life cycle">
             <LifecycleChart events={stageEvents.length ? stageEvents : [{ stage: lead.pipeline_stage, at: lead.posted_at }]} now={new Date().toISOString()} />
           </Card>
-          <Card title="Meeting" action={<span className="text-xs text-fg-3">Calendly</span>}>
+          <Card title="Meeting" action={<span className="text-xs text-fg-3">{google ? `Google Calendar · ${google.account_email ?? "connected"}` : "Google Calendar"}</span>}>
             {!meeting && <p className="text-sm text-fg-3">No meeting proposed yet. The first email asks for {cfg.meeting_minutes} minutes at {cfg.meeting_hour_ist % 12 || 12} {cfg.meeting_hour_ist < 12 ? "am" : "pm"} IST the next day; press I sent it after sending.</p>}
             {meeting && (
               <div className="space-y-2 text-sm">
@@ -139,15 +149,24 @@ export default async function LeadRecord({ params }: { params: Promise<{ id: str
                 </p>
                 {meeting.reply_intent && <p className="text-xs text-fg-3">Their reply: {INTENT[meeting.reply_intent] ?? meeting.reply_intent} ({Math.round(Number(meeting.reply_confidence ?? 0) * 100)}% sure).</p>}
                 {meeting.error && meeting.status !== "booked" && <p className="text-xs text-warm">Not booked automatically: {meeting.error}.</p>}
-                {meeting.status === "booked" && (
+                {meeting.status === "booked" && (meeting.event_link || meeting.meet_link) && (
                   <p className="flex gap-3 text-xs">
-                    {meeting.reschedule_url && <a href={meeting.reschedule_url} target="_blank" rel="noreferrer" className="underline">Reschedule</a>}
-                    {meeting.cancel_url && <a href={meeting.cancel_url} target="_blank" rel="noreferrer" className="underline">Cancel</a>}
+                    {meeting.event_link && <a href={meeting.event_link} target="_blank" rel="noreferrer" className="underline">Open in Google Calendar</a>}
+                    {meeting.meet_link && <a href={meeting.meet_link} target="_blank" rel="noreferrer" className="underline">Google Meet link</a>}
                   </p>
                 )}
-                {meeting.status === "needs_review" && (meeting.start_time ?? meeting.proposed_start) && (
-                  <ActionButton size="sm" variant="primary" action={bookMeeting.bind(null, meeting.id)} disabled={locked}
-                    label={`Book ${formatSlot(new Date((meeting.start_time ?? meeting.proposed_start)!))} on Calendly`} pendingLabel="Booking…" />
+                {["needs_review", "proposed"].includes(meeting.status) && calendarLink && (
+                  <div className="flex flex-wrap items-start gap-2">
+                    {meeting.status === "needs_review" && (
+                      <a href={calendarLink} target="_blank" rel="noreferrer" className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-fg">
+                        Add {formatSlot(new Date(slotFor(meeting)!))} to Google Calendar
+                      </a>
+                    )}
+                    {meeting.status === "needs_review" && <ActionButton size="sm" action={confirmCalendarAdded.bind(null, meeting.id)} label="I added it" disabled={locked} />}
+                    {meeting.status === "needs_review" && google && (
+                      <ActionButton size="sm" action={bookMeeting.bind(null, meeting.id)} disabled={locked} label="Book it for me" pendingLabel="Booking…" />
+                    )}
+                  </div>
                 )}
               </div>
             )}
