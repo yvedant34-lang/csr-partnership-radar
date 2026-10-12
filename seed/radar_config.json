@@ -3,7 +3,7 @@
   "_inferred": [
     "signal_points.new_initiative", "signal_points.unspent_csr", "signal_points.event_or_vlog", "signal_points.annual_report_mention",
     "recency_buckets", "slow_decay_factor", "sector_points", "geo_points", "budget_points",
-    "partner_penalty", "tiers.warm_min (any value 50..60 fits)", "tiers.hot_min (any value 71+ fits)",
+    "partner_penalty", "tiers.warm_min (any value 50..60 fits the CSV; 60 chosen 12 Oct after live RSS showed out-of-footprint headlines at 55-57)", "tiers.hot_min (any value 71+ fits)",
     "gates.too_old_days", "conversion_prior"
   ],
   "_unverified": ["signal_points.partner_search", "signal_points.csr_tender_or_eoi", "signal_points.new_csr_head", "budget_points large (>= 10 Cr)"],
@@ -41,7 +41,7 @@
   "budget_points": { "unknown": 3, "under_1_cr": 5, "from_1_to_10_cr": 10, "over_10_cr": 15 },
   "partner_penalty": 15,
 
-  "tiers": { "hot_min": 75, "warm_min": 55 },
+  "tiers": { "hot_min": 75, "warm_min": 60 },
   "gates": {
     "enabled": ["too_old", "outside_footprint", "partner_already_selected", "implemented_in_house"],
     "too_old_days": 14

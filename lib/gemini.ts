@@ -1,0 +1,212 @@
+import "server-only";
+
+// Gemini Flash over REST. Temperature 0, JSON schema output. Gemini extracts facts only:
+// it never returns a score, tier or probability (lib/scoring.ts does that in plain code).
+
+const API = "https://generativelanguage.googleapis.com/v1beta/models";
+const FALLBACK_MODEL = "gemini-3.6-flash";
+
+export const SIGNAL_TYPES = [
+  "partner_search", "csr_tender_or_eoi", "new_initiative", "unspent_csr",
+  "new_csr_head", "event_or_vlog", "annual_report_mention", "other",
+] as const;
+
+export const FOCUS_AREAS = ["Education", "Skill Development", "Digital Literacy", "Youth Employment", "Other"] as const;
+
+export const GEMINI_PROMPT = `You read Indian CSR (corporate social responsibility) news for an education NGO in Pune that serves school dropouts and first generation job seekers. Its sectors: education, skill development, digital literacy, youth employment.
+
+Extract facts from the item below into the JSON schema. Rules:
+- Use only what the text says. If a field is not stated, return null (or [] for lists). Never guess.
+- relevant = true only if a company (or its foundation) is funding, launching, spending on, or seeking partners for work in the NGO's sectors in India, or if the item is an Indian CSR policy or regulation change. Awards, ads, sport, stock news and foreign news are not relevant.
+- is_policy = true for CSR law, rules, MCA notices, NCCSR or regulator guidance. Then fill policy_impact and policy_action and leave company fields null.
+- company_name: the funding company, not the NGO or the implementing partner. Use its common name (e.g. "BASF India", "Zeta").
+- signal_type:
+  partner_search = the company publicly asks for NGO or implementation partners;
+  csr_tender_or_eoi = a formal tender, EOI or call for proposals;
+  new_initiative = a new centre, programme or project launched or announced;
+  unspent_csr = money moved to an Unspent CSR Account or unspent CSR obligation;
+  new_csr_head = a new head of CSR or CSR committee chair appointed;
+  event_or_vlog = interview, panel, award, opinion piece;
+  annual_report_mention = CSR spend figures from an annual report with no unspent amount;
+  other = anything else.
+- csr_focus_area: the closest of the allowed values.
+- city, state: where this activity happens. geo_scope: city | state | pan_india | other (other = a specific place outside the NGO's state, Maharashtra).
+- programme_states: every Indian state the text says this company's programme already runs in (e.g. other centres already live).
+- poc_name, poc_designation: only a person named in the text as speaking for the company. Copy the name exactly as written. If nobody is named, null. Never invent a contact.
+- implementation_partner: the NGO or agency delivering the work, as named. If the company runs it itself, write "<name> (in house)". If not named, null.
+- budget_inr_cr: the amount in crore rupees if stated (convert lakh: 50 lakh = 0.5). Else null.
+- summary: two plain sentences, facts only, Indian formats (Rs, crore, lakh).
+- why_now: one plain sentence for the NGO's partnerships head: is there a reason to contact this company now, and why. No hype.`;
+
+export const GEMINI_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    relevant: { type: "BOOLEAN" },
+    is_policy: { type: "BOOLEAN" },
+    company_name: { type: "STRING", nullable: true },
+    industry: { type: "STRING", nullable: true },
+    csr_focus_area: { type: "STRING", enum: [...FOCUS_AREAS], nullable: true },
+    signal_type: { type: "STRING", enum: [...SIGNAL_TYPES], nullable: true },
+    city: { type: "STRING", nullable: true },
+    state: { type: "STRING", nullable: true },
+    geo_scope: { type: "STRING", enum: ["city", "state", "pan_india", "other"], nullable: true },
+    programme_states: { type: "ARRAY", items: { type: "STRING" } },
+    poc_name: { type: "STRING", nullable: true },
+    poc_designation: { type: "STRING", nullable: true },
+    implementation_partner: { type: "STRING", nullable: true },
+    budget_inr_cr: { type: "NUMBER", nullable: true },
+    beneficiaries: { type: "STRING", nullable: true },
+    summary: { type: "STRING" },
+    why_now: { type: "STRING" },
+    policy_impact: { type: "STRING", nullable: true },
+    policy_action: { type: "STRING", nullable: true },
+  },
+  required: ["relevant", "is_policy", "summary", "why_now", "programme_states"],
+  propertyOrdering: [
+    "relevant", "is_policy", "company_name", "industry", "csr_focus_area", "signal_type", "city", "state",
+    "geo_scope", "programme_states", "poc_name", "poc_designation", "implementation_partner", "budget_inr_cr",
+    "beneficiaries", "summary", "why_now", "policy_impact", "policy_action",
+  ],
+} as const;
+
+export interface Extraction {
+  relevant: boolean;
+  is_policy: boolean;
+  company_name: string | null;
+  industry: string | null;
+  csr_focus_area: (typeof FOCUS_AREAS)[number] | null;
+  signal_type: (typeof SIGNAL_TYPES)[number] | null;
+  city: string | null;
+  state: string | null;
+  geo_scope: "city" | "state" | "pan_india" | "other" | null;
+  programme_states: string[];
+  poc_name: string | null;
+  poc_designation: string | null;
+  implementation_partner: string | null;
+  budget_inr_cr: number | null;
+  beneficiaries: string | null;
+  summary: string;
+  why_now: string;
+  policy_impact: string | null;
+  policy_action: string | null;
+}
+
+export class GeminiError extends Error {
+  constructor(message: string, readonly status?: number, readonly retryAfterMs?: number) {
+    super(message);
+  }
+}
+
+interface GenerateOptions {
+  system?: string;
+  schema?: object;
+  timeoutMs?: number;
+  deadline?: number; // epoch ms: no retry that would end after this
+}
+
+// Free tier allows roughly 10 requests a minute: one call at a time, spaced out.
+const MIN_INTERVAL_MS = Number(process.env.GEMINI_MIN_INTERVAL_MS ?? 6500);
+let gate: Promise<void> = Promise.resolve();
+let lastCallAt = 0;
+
+function throttle(): Promise<void> {
+  const next = gate.then(async () => {
+    const wait = lastCallAt + MIN_INTERVAL_MS - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastCallAt = Date.now();
+  });
+  gate = next.catch(() => undefined);
+  return next;
+}
+
+/** RetryInfo.retryDelay ("17s", "41079.6s") in ms, or null. */
+function retryDelayMs(body: string): number | null {
+  try {
+    const details: { "@type"?: string; retryDelay?: string }[] = JSON.parse(body).error?.details ?? [];
+    const d = details.find((x) => x["@type"]?.endsWith("RetryInfo"))?.retryDelay;
+    return d ? Math.ceil(parseFloat(d) * 1000) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function callModel(model: string, prompt: string, opts: GenerateOptions, attempt = 0): Promise<string> {
+  await throttle();
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new GeminiError("GEMINI_API_KEY is not set");
+  const res = await fetch(`${API}/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 20_000),
+    body: JSON.stringify({
+      ...(opts.system ? { systemInstruction: { parts: [{ text: opts.system }] } } : {}),
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0,
+        ...(opts.schema ? { responseMimeType: "application/json", responseSchema: opts.schema } : {}),
+      },
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    const delay = retryDelayMs(body);
+    // Short waits (per-minute limits, brief overload) are worth one retry on the same model.
+    if ((res.status === 429 || res.status === 503) && attempt < 1 && (delay ?? 8000) <= 30_000
+        && Date.now() + (delay ?? 8000) < (opts.deadline ?? Infinity)) {
+      await new Promise((r) => setTimeout(r, (delay ?? 8000) + 500));
+      return callModel(model, prompt, opts, attempt + 1);
+    }
+    let msg = body.slice(0, 200);
+    try { msg = JSON.parse(body).error?.message?.split("\n")[0] ?? msg; } catch { /* keep raw */ }
+    throw new GeminiError(`${model}: ${res.status} ${msg}`, res.status, delay ?? undefined);
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
+  if (!text) throw new GeminiError(`${model}: empty response (${data?.candidates?.[0]?.finishReason ?? "no candidate"})`);
+  return text;
+}
+
+// Free tier caps each model at about 20 requests a day. Step down the Flash family when a model
+// is exhausted, overloaded or slow, and skip it until Google's stated reset time.
+const downUntil = new Map<string, number>();
+
+export function modelLadder(): string[] {
+  const primary = process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash";
+  const extra = (process.env.GEMINI_FALLBACK_MODELS ?? `${FALLBACK_MODEL},gemini-3.5-flash-lite`)
+    .split(",").map((m) => m.trim()).filter(Boolean);
+  return [...new Set([primary, ...extra])];
+}
+
+export async function generate(prompt: string, opts: GenerateOptions = {}): Promise<{ text: string; model: string }> {
+  const ladder = modelLadder();
+  let lastError: unknown = null;
+  for (const model of ladder) {
+    if ((downUntil.get(model) ?? 0) > Date.now()) continue;
+    try {
+      return { text: await callModel(model, prompt, opts), model };
+    } catch (e) {
+      lastError = e;
+      const err = e as GeminiError;
+      const timedOut = /timeout|aborted/i.test(err.message);
+      const retryable = timedOut || err.status === 429 || err.status === 500 || err.status === 503 || err.status === 404;
+      if (!retryable) throw e;
+      downUntil.set(model, Date.now() + Math.max(err.retryAfterMs ?? 0, 10 * 60_000));
+    }
+  }
+  throw lastError ?? new GeminiError("all Gemini models are rate limited; items stay queued", 429);
+}
+
+export async function extract(
+  item: { title: string; snippet?: string | null; source_name?: string | null; published_at?: string | null; body?: string | null },
+  deadline?: number,
+) {
+  const lines = [
+    `Headline: ${item.title}`,
+    item.source_name ? `Publisher: ${item.source_name}` : "",
+    item.published_at ? `Published: ${item.published_at}` : "",
+    item.snippet ? `Snippet: ${item.snippet}` : "",
+    item.body ? `Article text:\n${item.body.slice(0, 12_000)}` : "",
+  ].filter(Boolean);
+  const { text, model } = await generate(lines.join("\n"), { system: GEMINI_PROMPT, schema: GEMINI_SCHEMA, deadline });
+  return { extraction: JSON.parse(text) as Extraction, model };
+}

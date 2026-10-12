@@ -7,3 +7,4 @@ node_modules
 next-env.d.ts
 seed/private/
 .DS_Store
+.claude/settings.local.json
